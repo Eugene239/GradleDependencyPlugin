@@ -5,11 +5,24 @@ Spike to check dependency versions
 ### Gradle
 
 In `buildSrc/build.gradle`   :
+Add Jitpack repository
+```groovy
+buildscript {
+    repositories {
+        maven {
+            url = uri("https://jitpack.io")
+            credentials {
+                username = "jp_cbr4gl1v8a77aogv268l7u157j"
+            }
+        }
+    }
+}
+```
+
 
 ```gradle
 dependencies {
-    implementation("io.epavlov:gradle-plugin-dependency:${latestVersion}")
-    ...
+     classpath("com.github.Eugene239:GradleDependencyPlugin:${latestVersion}")
 }
 ```
 
@@ -24,11 +37,12 @@ Add configuration
 ``` groovy
 dependencyGraphOptions {
     appConfigurationNames = [
-        "worldDebugCompileClasspath",
-        "chinaDebugCompileClasspath""
+        "flavor1dDebugRuntimeClasspath",
+        "flavor2DebugRuntimeClasspath""
     ]
-    dependencyNameRegex = "^io\\.epavlov\\.(?!android).*",
+    dependencyNameRegex = "^io\\.epavlov\\.(?!android).*"
     printConfigurations = false
+    checkVersions = false
 }
 ```
 Also you can pass a postfix of configuration name, it will fetch all configuration contains this name
@@ -37,8 +51,9 @@ dependencyGraphOptions {
     appConfigurationNames = [
         "runtimeClasspath",
     ]
-    dependencyNameRegex = "^io\\.epavlov\\..*",
+    dependencyNameRegex = "^io\\.epavlov\\..*"
     printConfigurations = false
+    checkVersions = false
 }
 ```
 
