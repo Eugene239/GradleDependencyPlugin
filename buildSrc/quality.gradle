@@ -1,0 +1,16 @@
+preBuild.dependsOn ktlintFormat
+ktlint {
+    android = true
+    enableExperimentalRules = true
+    ignoreFailures = false
+}
+
+android {
+    lintOptions {
+        abortOnError true
+
+        //ObsoleteLintCustomCheck errors are will go away when the rules are removed
+        // from the build agents.
+        ignore 'ResourceName', 'ObsoleteLintCustomCheck'
+    }
+}
