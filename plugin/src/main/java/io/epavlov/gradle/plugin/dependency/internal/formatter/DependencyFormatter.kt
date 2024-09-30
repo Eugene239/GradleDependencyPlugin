@@ -28,9 +28,8 @@ internal class DependencyFormatter(
     }
 
     override fun copySite(outputDir: File) {
-        create(outputDir, "dep.html")
+        create(outputDir, "index.html")
         create(outputDir, "main.js")
-        create(outputDir, "style.css")
     }
 
     override fun saveConfigurations(outputDir: File, configurations: List<Configuration>) {

@@ -6,32 +6,74 @@ var filterTerm = "";
 
 var CONFLICT_ATTR = "dep-name";
 
+var selectedConfiguration = null;
 
 function onLoad() {
-  fetch("configurations.json")
+  isLoading(true)
+  fetch("/configurations.json")
     .then(response => response.json())
     .then(json => {
-        var configuration = json["configurations"][0].name
-        fetch(configuration + "/dependencies.json")
-            .then(response => response.json())
-                .then(json => {
-                    data = json
-                    filteredData = json
-                    fillConflicts()
-                     drawTree()
-      })
-    })
-    .catch(error => console.log(error))
+      setConfigurations(json);
+      console.log(json);
+      //       var configuration = json["configurations"][0].name
+      //       fetch(configuration + "/dependencies.json")
+      //           .then(response => response.json())
+      //               .then(json => {
+      //                   data = json
+      //                   filteredData = json
+      //                   fillConflicts()
+      //                    drawTree()
+      //     })
+      //   })
+      //   .catch(error => console.log(error))
 
-  document.getElementsByName("filter")[0].addEventListener('change', function (event) {
-    event.preventDefault();
-    if (globalTimeout != null) clearTimeout(globalTimeout);
-    globalTimeout = setTimeout(function () { filter(data, event.target.value) }, 300);
-  });
-
-
+      // document.getElementsByName("filter")[0].addEventListener('change', function (event) {
+      //   event.preventDefault();
+      //   if (globalTimeout != null) clearTimeout(globalTimeout);
+      //   globalTimeout = setTimeout(function () { filter(data, event.target.value) }, 300);
+    });
 }
 
+function setConfigurations(configurations) {
+  var container = document.getElementsByName("configuration-list")[0];
+  configurations.configurations.forEach(config => {
+    container.innerHTML += '<a class="navbar-item" type="configuration-selector" config="' + config.name + '">' + config.name + '</a>';
+  });
+  var selectors = document.querySelectorAll('[type="configuration-selector"]');
+  selectors.forEach(selector => {
+    selector.addEventListener("click", function () { selectConfiguration(selector.attributes["config"].value) });
+  });
+  selectConfiguration(configurations.configurations[0].name);
+}
+
+function selectConfiguration(name) {
+  var selectors = document.querySelectorAll('[type="configuration-selector"]');
+  selectors.forEach(selector => {
+    if (selector.attributes["config"].value == name) {
+      selector.classList.add("is-active");
+    } else {
+      selector.classList.remove("is-active");
+    }
+  });
+  if (selectedConfiguration !== name) {
+    selectedConfiguration = name;
+    fetchConfiguration(name);
+  }
+  console.log("select: " + name);
+}
+
+function fetchConfiguration(name) {
+  isLoading(true);
+  fetch(name + "/dependencies.json")
+    .then(response => response.json())
+    .then(json => {
+      data = json
+      filteredData = json
+      fillConflicts()
+      drawTree()
+      isLoading(false);
+    })
+}
 
 
 function filter(tree, term) {
@@ -75,7 +117,7 @@ function checkNode(node) {
   if (!isCorrectVersion(node)) {
     var split = node.name.split(":")
     var dependency = split[0] + ":" + split[1]
-    var versions = conflicts[dependency] ? conflicts[dependency] : new Set(); 
+    var versions = conflicts[dependency] ? conflicts[dependency] : new Set();
     versions.add(split[2]);
     versions.add(node.pomName.split(":")[2])
     conflicts[dependency] = versions;
@@ -116,7 +158,7 @@ function drawTree() {
 
   // Create the SVG container, a layer for the links and a layer for the nodes.
   const svg = d3.select("svg")
-      .attr("width", width)
+    .attr("width", width)
     .attr("height", dx)
     .attr("viewBox", [-marginLeft, -marginTop, width, dx])
     .attr("style", "max-width: 100%;  font: 10px sans-serif; user-select: none;");
@@ -178,15 +220,15 @@ function drawTree() {
       .attr("dy", "0.31em")
       .attr("x", d => d._children ? -6 : 6)
       .classed("node-conflict", d => {
-        var data  = d.data
+        var data = d.data
         return !isCorrectVersion(data) && data.name.includes(filterTerm);
-     })
+      })
       .attr("text-anchor", d => d._children ? "end" : "start")
-            .text(d => {
-              var data = d.data;
-              var text = data.pomName ? data.pomName : data.name;
-              return text;
-            })
+      .text(d => {
+        var data = d.data;
+        var text = data.pomName ? data.pomName : data.name;
+        return text;
+      })
       .clone(true).lower()
       .attr("stroke-linejoin", "round")
       .attr("stroke-width", 3)
@@ -240,7 +282,7 @@ function drawTree() {
   root.descendants().forEach((d, i) => {
     d.id = i;
     d._children = d.children;
-   // if (d.depth && d.depth > 2) d.children = null;
+    // if (d.depth && d.depth > 2) d.children = null;
     // console.log(d.depth && d.data.name.length !== 6);
     //if (d.depth && d.data.name.length !== 3) d.children = null;
   });
@@ -254,8 +296,17 @@ document.addEventListener('click', function (event) {
   var target = event.target;
   var attribute = target.getAttribute(CONFLICT_ATTR);
   if (!attribute) return;
-	event.preventDefault();
+  event.preventDefault();
   // todo fix changing 
   document.getElementsByName("filter")[0].value = attribute;
   filter(data, attribute);
 }, false);
+
+function isLoading(bool) {
+  var elem = document.getElementsByName("progress-bar")[0]
+  if (bool) {
+    elem.classList.remove("is-hidden")
+  } else {
+    elem.classList.add("is-hidden")
+  }
+}

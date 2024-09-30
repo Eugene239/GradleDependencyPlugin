@@ -1,4 +1,4 @@
-# Gradle Dependency Graph UI Plugin
+# Gradle Dependency Plugin
 
 Spike to check dependency versions
 

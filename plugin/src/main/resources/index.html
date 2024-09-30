@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html class="theme-light">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
+    <title>Gradle Dependency Plugin</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="main.js"></script>
+</head>
+
+<body onload="onLoad()">
+    <nav class="navbar is-success" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <img class="navbar-item" src="https://www.svgrepo.com/show/353831/gradle.svg" width="72px" height="72px" />
+        </div>
+
+        <div class="navbar-item has-dropdown is-hoverable">
+            <a class="navbar-link">
+              Graph
+            </a>
+            <div class="navbar-dropdown" name="configuration-list"></div>
+          </div>
+          <div class="navbar-end">
+            <div class="navbar-item">
+                Version 1.1.0-SNAPSHOT
+            </div>
+            </div>
+        <!-- <a class="navbar-item">
+            Versions
+        </a> -->
+    </nav>
+    <progress class="progress is-small is-info" max="100" name="progress-bar">15%</progress>
+
+    <svg name="graph" class="m-4"></svg>
+</body>
+
+</html>
