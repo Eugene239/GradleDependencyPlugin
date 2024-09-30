@@ -3,6 +3,11 @@ var globalTimeout = null;
 var selectedConfiguration = null;
 const graph = new Graph();
 
+const TAB_GRAPH = "tab-graph"
+const TAB_VERSIONS = "tab-versions"
+
+var selectedTab = TAB_GRAPH
+
 function onLoad() {
   isLoading(true)
   fetch("configurations.json")
@@ -21,10 +26,11 @@ function onLoad() {
       //   })
       //   .catch(error => console.log(error))
 
-      // document.getElementsByName("filter")[0].addEventListener('change', function (event) {
-      //   event.preventDefault();
-      //   if (globalTimeout != null) clearTimeout(globalTimeout);
-      //   globalTimeout = setTimeout(function () { filter(data, event.target.value) }, 300);
+    });
+    document.getElementsByName("dependency-filter")[0].addEventListener('change', function (event) {
+      event.preventDefault();
+      if (globalTimeout != null) clearTimeout(globalTimeout);
+      globalTimeout = setTimeout(function () { graph.filter(event.target.value) }, 300);
     });
 }
 
@@ -37,6 +43,7 @@ function setConfigurations(configurations) {
   selectors.forEach(selector => {
     selector.addEventListener("click", function () { selectConfiguration(selector.attributes["config"].value) });
   });
+  setStarupFlags(configurations.startupFlags)
   setVersion(configurations.version)
   selectConfiguration(configurations.configurations[0].name);
 }
@@ -46,7 +53,21 @@ function setVersion(version){
   versionContainer.innerHTML = version;
 }
 
+function setStarupFlags(flags) {
+  var latestVersionLink = document.getElementsByName("latest-versions")[0];
+  if (flags.fetchVersions === true) {
+    latestVersionLink.classList.remove("is-hidden");
+    latestVersionLink.addEventListener("click", function() {
+        setTab(TAB_VERSIONS);
+    });
+    fetchLatestVersions()
+  } else {
+    latestVersionLink.classList.add("is-hidden");
+  }
+}
+
 function selectConfiguration(name) {
+  setTab(TAB_GRAPH);
   var selectors = document.querySelectorAll('[type="configuration-selector"]');
   selectors.forEach(selector => {
     if (selector.attributes["config"].value == name) {
@@ -57,6 +78,7 @@ function selectConfiguration(name) {
   });
   if (selectedConfiguration !== name) {
     selectedConfiguration = name;
+    document.getElementsByName("selected-configuration")[0].innerHTML = selectedConfiguration;
     fetchConfiguration(name);
   }
   console.log("select: " + name);
@@ -69,22 +91,24 @@ function fetchConfiguration(name) {
     .then(json => {
       graph.data = json
       graph.filteredData = json
-      graph.fillConflicts()
+     // graph.fillConflicts()
       graph.drawTree()
+      graph.filter(graph.filterTerm);
       isLoading(false);
     })
 }
 
-
-document.addEventListener('click', function (event) {
-  var target = event.target;
-  var attribute = target.getAttribute(CONFLICT_ATTR);
-  if (!attribute) return;
-  event.preventDefault();
-  // todo fix changing 
-  document.getElementsByName("filter")[0].value = attribute;
-  filter(data, attribute);
-}, false);
+function fetchLatestVersions(){
+  fetch("latest-versions.json")
+  .then(response => response.json())
+  .then(json => {
+      var container = document.getElementsByName("versions-table")[0]
+      Object.keys(json).forEach(key=> {
+        var library = key + ":" + json[key]
+        container.innerHTML += '<a class="panel-block">'+ library +'</a>';
+      })
+  })
+}
 
 function isLoading(bool) {
   var elem = document.getElementsByName("progress-bar")[0]
@@ -93,4 +117,20 @@ function isLoading(bool) {
   } else {
     elem.classList.add("is-hidden")
   }
+}
+
+
+function setTab(tab) {
+  console.log("setTab", tab);
+  if (selectedTab === tab) return;
+  selectedTab = tab;
+  var tabs = document.querySelectorAll('[type="tab"]');
+  console.log("tabs", tabs);
+  tabs.forEach(t=> {
+    if (t.attributes["tab"].value!=tab) {
+      t.classList.add("is-hidden")
+    } else {
+      t.classList.remove("is-hidden")
+    }
+  });
 }

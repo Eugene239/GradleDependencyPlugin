@@ -6,9 +6,9 @@ class Graph {
     filterTerm = "";
     CONFLICT_ATTR = "dep-name";
 
-    filter(tree, term) {
-        this.filteredData = JSON.parse(JSON.stringify(tree))
-        this.filterTree(filteredData, term);
+    filter(term) {
+        this.filteredData = JSON.parse(JSON.stringify(this.data))
+        this.filterTree(this.filteredData, term);
         this.drawTree();
     }
 
@@ -22,7 +22,7 @@ class Graph {
             return true
         }
         if (tree.children && tree.children.length > 0) {
-            tree.children = tree.children.filter(child => filterTree(child, term));
+            tree.children = tree.children.filter(child => this.filterTree(child, term));
             return tree.children && tree.children.length > 0;
         }
         return false;
@@ -155,8 +155,10 @@ class Graph {
                 .attr("text-anchor", d => d._children ? "end" : "start")
                 .text(d => {
                     var data = d.data;
+                    //console.log(data);
+                    var version = data.versions? (data.versions.actual ? data.versions.actual : data.versions.resolved) : "";
                     var text = data.pomName ? data.pomName : data.name;
-                    return text;
+                    return text+":"+version;
                 })
                 .clone(true).lower()
                 .attr("stroke-linejoin", "round")

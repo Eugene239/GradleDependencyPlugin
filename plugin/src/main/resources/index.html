@@ -19,20 +19,48 @@
 
         <div class="navbar-item has-dropdown is-hoverable">
             <a class="navbar-link">
-              Graph
+                Graph
             </a>
             <div class="navbar-dropdown" name="configuration-list"></div>
-          </div>
-          <div class="navbar-end">
+        </div>
+        <a class="navbar-item is-hidden" name="latest-versions">
+            Latest versions
+        </a>
+        <div class="navbar-end">
             <div class="navbar-item" name="version"> </div>
-            </div>
+        </div>
         <!-- <a class="navbar-item">
             Versions
         </a> -->
     </nav>
     <progress class="progress is-small is-info" max="100" name="progress-bar">15%</progress>
 
-    <svg name="graph" class="m-4"></svg>
+    <nav class="panel m-4" type="tab" tab="tab-graph">
+        <div class="panel-heading">
+            <div class="columns is-gap-4">
+                <div name="selected-configuration" class="column is-narrow" style="align-self: center;"></div>
+                <p class="control column is-6">
+                    <input class="input" type="text" placeholder="Search" name="dependency-filter" />
+                  </p>    
+            </div>
+        </div>
+
+
+        <div class="panel-block" name="svg-container">
+            <svg name="graph" class="m-4"></svg>
+        </div>
+    </nav>
+
+    <div class="is-hidden" type="tab" tab="tab-versions">
+        <nav class="panel m-4" >
+            <p class="panel-heading">Latest versions</p>
+            
+            <div name="versions-table">
+            
+            </div>
+           
+          </nav>
+    </div>
 </body>
 
 </html>
