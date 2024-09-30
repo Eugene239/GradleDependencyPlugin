@@ -48,7 +48,7 @@ abstract class DependencyStartTask : DefaultTask() {
                     }
             )
 
-            val core = koinInstance.koin.get<io.epavlov.gradle.plugin.dependency.Core>()
+            val core = koinInstance.koin.get<Core>()
             core.execute(
                 configurations = getConfigurations().get(),
             )

@@ -10,7 +10,7 @@ var selectedConfiguration = null;
 
 function onLoad() {
   isLoading(true)
-  fetch("/configurations.json")
+  fetch("configurations.json")
     .then(response => response.json())
     .then(json => {
       setConfigurations(json);

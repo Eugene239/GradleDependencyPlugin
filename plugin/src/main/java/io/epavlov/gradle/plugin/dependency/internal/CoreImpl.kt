@@ -1,5 +1,6 @@
 package io.epavlov.gradle.plugin.dependency.internal
 
+import io.epavlov.gradle.plugin.dependency.Core
 import io.epavlov.gradle.plugin.dependency.internal.cache.version.VersionCache
 import io.epavlov.gradle.plugin.dependency.internal.dependency.DependencyFetcher
 import io.epavlov.gradle.plugin.dependency.internal.formatter.Formatter
@@ -13,7 +14,7 @@ internal class CoreImpl(
     private val project: Project,
     private val startupFlags: StartupFlags,
     private val dependencyFetcher: DependencyFetcher
-) : io.epavlov.gradle.plugin.dependency.Core {
+) : Core {
 
     override fun execute(
         configurations: List<Configuration>,

@@ -57,11 +57,11 @@ class DependencyPlugin : Plugin<Project> {
 //            configuration = configurations.first(),
 //            extension = extension
 //        )
-        val action = Action<io.epavlov.gradle.plugin.dependency.DependencyStartTask> {
+        val action = Action<DependencyStartTask> {
             it.getConfigurations().set(configurations)
             it.getExtension().set(extension)
         }
-        project.tasks.register("dependencyUI", io.epavlov.gradle.plugin.dependency.DependencyStartTask::class.java, action)
+        project.tasks.register("dependencyUI", DependencyStartTask::class.java, action)
     }
 
     private fun test(
