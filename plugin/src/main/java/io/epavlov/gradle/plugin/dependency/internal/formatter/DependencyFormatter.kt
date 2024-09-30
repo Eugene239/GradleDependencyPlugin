@@ -23,13 +23,13 @@ internal class DependencyFormatter(
         val file = File(outputDir, "dependencies.json")
         file.createNewFile()
         file.writeText(json)
-        println("open to check dependencies: $outputDir")
         return file
     }
 
     override fun copySite(outputDir: File) {
         create(outputDir, "index.html")
         create(outputDir, "main.js")
+        create(outputDir, "graph.js")
     }
 
     override fun saveConfigurations(outputDir: File, configurations: List<Configuration>) {
