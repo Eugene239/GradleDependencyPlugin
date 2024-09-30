@@ -4,6 +4,9 @@ import io.epavlov.gradle.plugin.dependency.Core
 import io.epavlov.gradle.plugin.dependency.internal.cache.version.VersionCache
 import io.epavlov.gradle.plugin.dependency.internal.dependency.DependencyFetcher
 import io.epavlov.gradle.plugin.dependency.internal.formatter.Formatter
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import java.io.File
@@ -16,9 +19,10 @@ internal class CoreImpl(
     private val dependencyFetcher: DependencyFetcher
 ) : Core {
 
-    override fun execute(
+    override suspend fun execute(
         configurations: List<Configuration>,
-    ) {
+    ) = coroutineScope {
+        println("EXEC: $startupFlags")
         val rootDir = File(project.buildDir, "dependencyUI")
         if (rootDir.exists()) {
             rootDir.deleteRecursively()
@@ -26,12 +30,15 @@ internal class CoreImpl(
         } else {
             rootDir.mkdirs()
         }
-        configurations.map { configuration ->
-            processConfiguration(
-                rootDir = rootDir,
-                configuration = configuration
-            )
-        }
+        configurations
+            .map { configuration ->
+                async {
+                    processConfiguration(
+                        rootDir = rootDir,
+                        configuration = configuration
+                    )
+                }
+        }.awaitAll()
         formatter.copySite(rootDir)
         formatter.saveConfigurations(rootDir, configurations)
         if (startupFlags.fetchVersions) {
@@ -39,7 +46,7 @@ internal class CoreImpl(
         }
     }
 
-    private fun processConfiguration(
+    private suspend fun processConfiguration(
         rootDir: File,
         configuration: Configuration
     ) {

@@ -6,6 +6,9 @@ import io.epavlov.gradle.plugin.dependency.internal.cache.lib.LibKey
 import io.epavlov.gradle.plugin.dependency.internal.filter.RegexFilter
 import io.epavlov.gradle.plugin.dependency.internal.pom.PomDependency
 import io.epavlov.gradle.plugin.dependency.internal.pom.PomXMLParser
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -24,7 +27,7 @@ internal class IncomingDependencyFetcher(
         private const val UNSPECIFIED = "unspecified"
     }
 
-    override fun fetch(configuration: Configuration): DependencyNode {
+    override suspend fun fetch(configuration: Configuration): DependencyNode {
         println("####### FETCH ${configuration.name}")
         val incoming = configuration.incoming.resolutionResult.root.dependencies
             .filterIsInstance<ResolvedDependencyResult>()
@@ -41,48 +44,54 @@ internal class IncomingDependencyFetcher(
         return parent
     }
 
-    private fun fillDependencyTree(
+    private suspend fun fillDependencyTree(
         parent: DependencyNode,
         dependencies: Set<ResolvedDependencyResult>,
         pomDependencies: Set<PomDependency> = emptySet(),
     ) {
-        dependencies
-            .filter { regexFilter.matches(it) }
-            .forEach { dependency ->
-                val selected = dependency.selected
-                val moduleVersion = selected.moduleVersion ?: throw Exception("Module version not found for ${selected.id.displayName}")
-                val name = moduleVersion.module.toString()
-                val child = DependencyNode(
-                    name = name,
-                    versions = io.epavlov.gradle.plugin.dependency.Versions(
-                        resolved = moduleVersion.version,
-                        actual = moduleVersion.getPomVersion(pomDependencies)
-                    ),
-                    isProject = selected.id.isProjectComponent()
-                )
-                parent.children.add(child)
+        coroutineScope {
+            dependencies
+                .filter { regexFilter.matches(it) }
+                .map { dependency ->
+                    async {
+                        val selected = dependency.selected
+                        val moduleVersion = selected.moduleVersion
+                            ?: throw Exception("Module version not found for ${selected.id.displayName}")
+                        val name = moduleVersion.module.toString()
+                        val child = DependencyNode(
+                            name = name,
+                            versions = io.epavlov.gradle.plugin.dependency.Versions(
+                                resolved = moduleVersion.version,
+                                actual = moduleVersion.getPomVersion(pomDependencies)
+                            ),
+                            isProject = selected.id.isProjectComponent()
+                        )
+                        parent.children.add(child)
 
-                val childrenDependencies = if (child.isProject == true) {
-                    emptySet()
-                } else {
-                    selected.dependencies
-                        .filterIsInstance<ResolvedDependencyResult>()
-                        .filter { regexFilter.matches(it) }
-                        .toSet()
+                        val childrenDependencies = if (child.isProject == true) {
+                            emptySet()
+                        } else {
+                            selected.dependencies
+                                .filterIsInstance<ResolvedDependencyResult>()
+                                .filter { regexFilter.matches(it) }
+                                .toSet()
+                        }
+
+                        val childrenPomDependencies = if (child.isProject == true) {
+                            emptySet()
+                        } else {
+                            getPomDependencies(child)
+                        }
+
+                        fillDependencyTree(
+                            parent = child,
+                            dependencies = childrenDependencies,
+                            pomDependencies = childrenPomDependencies
+                        )
+                    }
                 }
-
-                val childrenPomDependencies = if (child.isProject == true) {
-                    emptySet()
-                } else {
-                    getPomDependencies(child)
-                }
-
-                fillDependencyTree(
-                    parent = child,
-                    dependencies = childrenDependencies,
-                    pomDependencies = childrenPomDependencies
-                )
-            }
+                .awaitAll()
+        }
     }
 
     private fun ModuleVersionIdentifier.getPomVersion(pomDependencies: Set<PomDependency>): String? {
@@ -94,7 +103,7 @@ internal class IncomingDependencyFetcher(
         return pom?.version
     }
 
-    private fun getPomDependencies(node: DependencyNode): Set<PomDependency> {
+    private suspend fun getPomDependencies(node: DependencyNode): Set<PomDependency> {
         val split = node.name.split(":")
         val key = LibKey(
             group = split.first(),

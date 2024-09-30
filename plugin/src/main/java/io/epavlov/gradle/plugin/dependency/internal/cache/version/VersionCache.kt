@@ -1,7 +1,8 @@
 package io.epavlov.gradle.plugin.dependency.internal.cache.version
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.gradle.api.Project
-import org.gradle.api.artifacts.ResolvedDependency
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.invocation.DefaultGradle
 import java.net.URL
@@ -41,20 +42,20 @@ internal class VersionCache(
         return repos
     }
 
-    @Deprecated("Use version with group and module")
-    fun getVersionData(
-        resolvedDependency: ResolvedDependency
-    ): VersionData {
-        val key = VersionKey(
-            group = resolvedDependency.moduleGroup,
-            module = resolvedDependency.moduleName,
-        )
-        return cache.computeIfAbsent(key) {
-            getData(key) ?: throw Exception("Can't get version information for $key")
-        }
-    }
+//    @Deprecated("Use version with group and module")
+//    fun getVersionData(
+//        resolvedDependency: ResolvedDependency
+//    ): VersionData {
+//        val key = VersionKey(
+//            group = resolvedDependency.moduleGroup,
+//            module = resolvedDependency.moduleName,
+//        )
+//        return cache.computeIfAbsent(key) {
+//            getData(key) ?: throw Exception("Can't get version information for $key")
+//        }
+//    }
 
-    fun getVersionData(
+    suspend fun getVersionData(
         group: String,
         module: String
     ): VersionData {
@@ -62,9 +63,11 @@ internal class VersionCache(
             group = group,
             module = module,
         )
-        return cache.computeIfAbsent(key) {
-            getData(key) ?: throw Exception("Can't get version information for $key")
+        val value = cache[key]
+        if (value == null) {
+            cache[key] = getData(key) ?: throw Exception("Can't get version information for $key")
         }
+        return cache[key]!!
     }
 
     fun getCachedData(key: VersionKey): VersionData {
@@ -77,31 +80,37 @@ internal class VersionCache(
         }.toMap()
     }
 
-    private fun getData(key: VersionKey): VersionData? {
-        val sortedRepositories = repositories.entries.sortedByDescending { it.value }
-        sortedRepositories.forEach { entry ->
-            val group = key.group.replace(".", "/")
-            val module = key.module.replace(".", "/")
-            val url = "${entry.key.url}".removeSuffix("/")
-            val metaUrl = "$url/$group/$module/$POSTFIX"
-            runCatching {
-                val metaData = URL(metaUrl).readText()
-                val matcher = "<release>(.+)</release>".toRegex().find(metaData)
-                if (matcher != null) {
-                    val lastVersion = matcher.groupValues[1]
-                    incrementValue(entry.key)
-                    println("$group:$module = $lastVersion")
-                    return VersionData(lastVersion)
+    private suspend fun getData(key: VersionKey): VersionData? {
+        return withContext(Dispatchers.IO) {
+            val sortedRepositories = repositories.entries.sortedByDescending { it.value }
+            sortedRepositories.forEach { entry ->
+                val group = key.group.replace(".", "/")
+                val module = key.module.replace(".", "/")
+                val url = "${entry.key.url}".removeSuffix("/")
+                val metaUrl = "$url/$group/$module/$POSTFIX"
+                runCatching {
+                    val metaData = URL(metaUrl).readText()
+                    val matcher = "<release>(.+)</release>".toRegex().find(metaData)
+                    if (matcher != null) {
+                        val lastVersion = matcher.groupValues[1]
+                        incrementValue(entry.key)
+                        println("$group:$module = $lastVersion")
+                        return@withContext VersionData(lastVersion)
+                    }
+                }.onFailure {
+                    println("Can't metaData $key, url: $metaUrl")
                 }
-            }.onFailure {
-                println("Can't metaData $key, url: $metaUrl")
             }
+            return@withContext null
         }
-        return null
     }
 
     private fun incrementValue(repository: MavenArtifactRepository) {
         val value = repositories[repository] ?: 0
         repositories[repository] = value.inc()
+    }
+
+    fun clear() {
+        cache.clear()
     }
 }

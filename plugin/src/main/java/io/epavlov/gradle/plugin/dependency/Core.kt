@@ -4,7 +4,7 @@ import org.gradle.api.artifacts.Configuration
 
 interface Core {
 
-    fun execute(
+    suspend fun execute(
         configurations: List<Configuration>,
     )
 }

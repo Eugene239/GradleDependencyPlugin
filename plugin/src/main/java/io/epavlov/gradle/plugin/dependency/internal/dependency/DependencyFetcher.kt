@@ -5,5 +5,5 @@ import org.gradle.api.artifacts.Configuration
 
 internal interface DependencyFetcher {
 
-    fun fetch(configuration: Configuration): DependencyNode
+    suspend fun fetch(configuration: Configuration): DependencyNode
 }

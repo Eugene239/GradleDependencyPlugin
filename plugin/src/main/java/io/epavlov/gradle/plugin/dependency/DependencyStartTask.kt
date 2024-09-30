@@ -5,6 +5,7 @@ import io.epavlov.gradle.plugin.dependency.internal.di.diModule
 import io.epavlov.gradle.plugin.dependency.internal.di.koinInstance
 import io.epavlov.gradle.plugin.dependency.internal.filter.DependencyFilter
 import io.epavlov.gradle.plugin.dependency.internal.filter.RegexFilter
+import kotlinx.coroutines.runBlocking
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
@@ -49,9 +50,11 @@ abstract class DependencyStartTask : DefaultTask() {
             )
 
             val core = koinInstance.koin.get<Core>()
-            core.execute(
-                configurations = getConfigurations().get(),
-            )
+            runBlocking {
+                core.execute(
+                    configurations = getConfigurations().get(),
+                )
+            }
         }.onFailure {
             logger.log(LogLevel.ERROR, "Task execution failed", it)
         }.onSuccess {

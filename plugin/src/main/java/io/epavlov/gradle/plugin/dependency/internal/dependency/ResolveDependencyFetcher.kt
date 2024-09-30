@@ -15,7 +15,7 @@ internal class ResolveDependencyFetcher(
     private val pomXMLParser: PomXMLParser
 ) : DependencyFetcher {
 
-    override fun fetch(configuration: Configuration): DependencyNode {
+    override suspend fun fetch(configuration: Configuration): DependencyNode {
         runCatching {
             configuration.resolve()
         }.onFailure {
@@ -43,7 +43,7 @@ internal class ResolveDependencyFetcher(
                 )
 
                 if (filter.matches(node)) {
-                    val pomDeps = getPomDependencies(dep)
+                    val pomDeps = emptySet<PomDependency>()  //getPomDependencies(dep)
                     rootNode.children.add(node)
                     val subDep = dep.children
                     if (subDep.isNotEmpty()) {
@@ -66,8 +66,8 @@ internal class ResolveDependencyFetcher(
 //        }
 //    }
 
-    private fun getPomDependencies(dependency: ResolvedDependency): Set<PomDependency> {
-        val pom = libCache.getLibData(dependency).pomFile
-        return pomXMLParser.parse(pom)
-    }
+//    private fun getPomDependencies(dependency: ResolvedDependency): Set<PomDependency> {
+//        val pom = libCache.getLibData(dependency).pomFile
+//        return pomXMLParser.parse(pom)
+//    }
 }

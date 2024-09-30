@@ -84,6 +84,7 @@ gradlePlugin {
 dependencies {
     implementation(gradleApi())
     implementation(Dependencies.Libraries.kotlinxSerialization)
+    implementation(Dependencies.Libraries.coroutines)
     // DI
     implementation(Dependencies.Libraries.koin)
     testImplementation("junit:junit:4.13.2")

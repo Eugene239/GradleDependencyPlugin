@@ -16,34 +16,17 @@ internal class LibCache(
 ) {
     private val cache = HashMap<LibKey, LibData>()
 
-    fun getLibData(
+    suspend fun getLibData(
         key: LibKey
     ): LibData {
-        return cache.computeIfAbsent(key) {
-            println("[LibCache] cache miss: $key")
+        val value = cache[key]
+        if (value == null) {
+            cache[key] = getData(key)?: throw Exception("Can't get lib information for $key")
             if (startupFlags.fetchVersions) {
                 versionCache.getVersionData(group = key.group, module = key.module)
             }
-            getData(key) ?: throw Exception("Can't get lib information for $key")
         }
-    }
-
-    @Deprecated("Don't use it")
-    fun getLibData(
-        resolvedDependency: ResolvedDependency
-    ): LibData {
-        val key = LibKey(
-            group = resolvedDependency.moduleGroup,
-            module = resolvedDependency.moduleName,
-            version = resolvedDependency.moduleVersion
-        )
-        return cache.computeIfAbsent(key) {
-            println("[LibCache] cache miss: $key")
-            if (startupFlags.fetchVersions) {
-                versionCache.getVersionData(resolvedDependency)
-            }
-            getData(resolvedDependency) ?: throw Exception("DEPRECATED Can't get lib information for $key")
-        }
+        return cache[key]!!
     }
 
     fun getCachedData(libKey: LibKey): LibData {

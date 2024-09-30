@@ -6,6 +6,7 @@ import io.epavlov.gradle.plugin.dependency.internal.cache.version.VersionCache
 import io.epavlov.gradle.plugin.dependency.internal.dependency.IncomingDependencyFetcher
 import io.epavlov.gradle.plugin.dependency.internal.filter.DependencyFilter
 import io.epavlov.gradle.plugin.dependency.internal.pom.PomXMLParserImpl
+import kotlinx.coroutines.runBlocking
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -87,6 +88,8 @@ class DependencyPlugin : Plugin<Project> {
                 filter = regexFilter
             )
         )
-        fetcher.fetch(configuration)
+        runBlocking {
+            fetcher.fetch(configuration)
+        }
     }
 }
