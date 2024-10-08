@@ -8,7 +8,7 @@ plugins {
 }
 
 val major = 1
-val minor = 1
+val minor = 2
 val patch = 0
 
 val libraryVersion = LibVersions.getLibVersion(
@@ -23,6 +23,7 @@ var projectArtifactId = "gradle-plugin-dependency"
 version = libraryVersion
 
 publishing {
+    println(libraryVersion)
     publications {
         create<MavenPublication>("maven") {
             groupId = "io.epavlov"

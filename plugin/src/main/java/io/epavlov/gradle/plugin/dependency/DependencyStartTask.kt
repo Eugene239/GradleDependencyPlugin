@@ -31,21 +31,15 @@ abstract class DependencyStartTask : DefaultTask() {
         runCatching {
             val extension = getExtension().get()
             koinInstance.koin.declare(StartupFlags(fetchVersions = extension.checkVersions))
+         //   println("----- declare ${extension.dependencyNameRegex}")
+            koinInstance.koin.declare<RegexFilter>(DependencyFilter(
+                project = project,
+                regex = Regex(extension.dependencyNameRegex)
+            ))
             koinInstance.modules(
                 diModule +
                     module {
                         single<Project> { project }
-                        single<RegexFilter> {
-                            DependencyFilter(
-                                project = get(),
-                                regex = Regex(extension.dependencyNameRegex)
-                            )
-                        }
-//                        single<StartupFlags> {
-//                            StartupFlags(
-//                                fetchVersions = extension.checkVersions
-//                            )
-//                        }
                     }
             )
 

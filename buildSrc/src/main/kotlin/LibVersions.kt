@@ -19,10 +19,6 @@ object LibVersions {
     }
 
     private fun isRelease(project: Project): Boolean {
-        //support for existing method of flagging release
-        if ("true" == project.properties.get("ARTIFACTORY_IS_RELEASE")) {
-            return true
-        }
-        return project.hasProperty("release").let { it }
+        return "false" != project.properties["IS_RELEASE"]
     }
 }

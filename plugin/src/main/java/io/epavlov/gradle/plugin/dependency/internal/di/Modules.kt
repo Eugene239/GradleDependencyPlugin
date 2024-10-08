@@ -1,5 +1,6 @@
 package io.epavlov.gradle.plugin.dependency.internal.di
 
+import io.epavlov.gradle.plugin.dependency.Core
 import io.epavlov.gradle.plugin.dependency.internal.CoreImpl
 import io.epavlov.gradle.plugin.dependency.internal.cache.lib.LibCache
 import io.epavlov.gradle.plugin.dependency.internal.cache.version.VersionCache
@@ -17,12 +18,12 @@ import org.koin.dsl.module
 
 internal val diModule = module {
 
-    single<Formatter> {
+    factory<Formatter> {
         DependencyFormatter(
             startupFlags = get()
         )
     }
-    single<PomXMLParser> {
+    factory<PomXMLParser> {
         PomXMLParserImpl(
             filter = get()
         )
@@ -32,7 +33,7 @@ internal val diModule = module {
             project = get()
         )
     }
-    single {
+    factory {
         LibCache(
             versionCache = get(),
             startupFlags = get(),
@@ -47,7 +48,7 @@ internal val diModule = module {
 //        )
 //    }
 
-    single<DependencyFetcher> {
+    factory<DependencyFetcher> {
         IncomingDependencyFetcher(
             project = get(),
             regexFilter = get(),
@@ -56,7 +57,7 @@ internal val diModule = module {
         )
     }
 
-    single<io.epavlov.gradle.plugin.dependency.Core> {
+    factory<Core> {
         CoreImpl(
             formatter = get(),
             project = get(),
