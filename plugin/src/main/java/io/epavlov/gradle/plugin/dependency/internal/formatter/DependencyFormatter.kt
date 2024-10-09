@@ -1,6 +1,5 @@
 package io.epavlov.gradle.plugin.dependency.internal.formatter
 
-import io.epavlov.gradle.plugin.dependency.DependencyNode
 import io.epavlov.gradle.plugin.dependency.internal.StartupFlags
 import io.epavlov.plugin.BuildConfig
 import kotlinx.serialization.encodeToString

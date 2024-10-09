@@ -1,9 +1,11 @@
 package io.epavlov.gradle.plugin.dependency.internal.dependency
 
-import io.epavlov.gradle.plugin.dependency.DependencyNode
+import io.epavlov.gradle.plugin.dependency.internal.formatter.DependencyNode
+import io.epavlov.gradle.plugin.dependency.internal.UNSPECIFIED_VERSION
 import io.epavlov.gradle.plugin.dependency.internal.cache.lib.LibCache
 import io.epavlov.gradle.plugin.dependency.internal.cache.lib.LibKey
 import io.epavlov.gradle.plugin.dependency.internal.filter.RegexFilter
+import io.epavlov.gradle.plugin.dependency.internal.formatter.Versions
 import io.epavlov.gradle.plugin.dependency.internal.pom.PomDependency
 import io.epavlov.gradle.plugin.dependency.internal.pom.PomXMLParser
 import kotlinx.coroutines.async
@@ -23,24 +25,22 @@ internal class IncomingDependencyFetcher(
     private val libCache: LibCache,
     private val pomXMLParser: PomXMLParser
 ) : DependencyFetcher {
-    companion object {
-        private const val UNSPECIFIED = "unspecified"
-    }
+    private val logger = project.logger
 
     override suspend fun fetch(configuration: Configuration): DependencyNode {
-        println("####### FETCH ${configuration.name}")
+        logger.lifecycle("####### FETCH ${configuration.name}")
         val incoming = configuration.incoming.resolutionResult.root.dependencies
             .filterIsInstance<ResolvedDependencyResult>()
             .filter { regexFilter.matches(it) }
             .toSet()
 
         val parent = DependencyNode(name = configuration.name, isProject = true)
-        println("incoming size:  ${incoming.size}")
+        logger.lifecycle("incoming size:  ${incoming.size}")
         fillDependencyTree(
             parent = parent,
             dependencies = incoming,
         )
-        println("####### FETCH ${configuration.name} END")
+        logger.lifecycle("####### FETCH ${configuration.name} END")
         return parent
     }
 
@@ -60,7 +60,7 @@ internal class IncomingDependencyFetcher(
                         val name = moduleVersion.module.toString()
                         val child = DependencyNode(
                             name = name,
-                            versions = io.epavlov.gradle.plugin.dependency.Versions(
+                            versions = Versions(
                                 resolved = moduleVersion.version,
                                 actual = moduleVersion.getPomVersion(pomDependencies)
                             ),
@@ -96,8 +96,8 @@ internal class IncomingDependencyFetcher(
 
     private fun ModuleVersionIdentifier.getPomVersion(pomDependencies: Set<PomDependency>): String? {
         val pom = pomDependencies.find { it.name == module.name && it.groupId == group }
-        if (UNSPECIFIED.equals(pom?.version, true)) {
-            println("UNSPECIFIED VERSION: ${this.module}")
+        if (UNSPECIFIED_VERSION.equals(pom?.version, true)) {
+            logger.warn("UNSPECIFIED VERSION: ${this.module}")
             return null
         }
         return pom?.version
@@ -122,7 +122,7 @@ internal class IncomingDependencyFetcher(
             is ProjectComponentIdentifier -> true
             is ModuleComponentIdentifier -> null
             else -> {
-                println("unknown identifier type: ${this::class.java}")
+                logger.warn("unknown identifier type: ${this::class.java}")
                 null
             }
         }

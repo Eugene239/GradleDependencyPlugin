@@ -1,10 +1,10 @@
-package io.epavlov.gradle.plugin.dependency
+package io.epavlov.gradle.plugin.dependency.internal.formatter
 
 import kotlinx.serialization.Serializable
 
 
 @Serializable
-data class DependencyNode(
+internal data class DependencyNode(
     val name: String,
     var versions: Versions = Versions(),
     val children: MutableList<DependencyNode> = mutableListOf(),
@@ -12,7 +12,7 @@ data class DependencyNode(
 )
 
 @Serializable
-data class Versions(
+internal data class Versions(
     val actual: String? = null,
     val resolved: String? = null,
     val latest: String? = null

@@ -4,8 +4,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.gradle.api.Project
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.api.internal.artifacts.repositories.DefaultMavenLocalArtifactRepository
 import org.gradle.invocation.DefaultGradle
+import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Base64
 
 
 internal class VersionCache(
@@ -15,6 +18,7 @@ internal class VersionCache(
         private const val POSTFIX = "maven-metadata.xml"
     }
 
+    private val logger = project.logger
     private val cache = HashMap<VersionKey, VersionData>()
     private val repositories: MutableMap<MavenArtifactRepository, Int> by lazy {
         getRepositories()
@@ -36,24 +40,29 @@ internal class VersionCache(
         val settingsRepos = (project.gradle as? DefaultGradle)?.settings?.pluginManagement?.repositories.orEmpty()
             .filterIsInstance<MavenArtifactRepository>()
 
+        val resolutionManagement =
+            (project.gradle as? DefaultGradle)?.settings?.dependencyResolutionManagement
+                ?.repositories.orEmpty()
+                .filterIsInstance<MavenArtifactRepository>()
+
         repos.addAll(settingsRepos)
-        println("settingsRepos : ${settingsRepos.size}")
-        println("repos : ${repos.size}")
+        repos.addAll(resolutionManagement)
+
+        repos.removeIf { it is DefaultMavenLocalArtifactRepository }
+        logger.info("REPOSITORIES")
+        repos.forEach {
+            logger.info ("${it.name} ${it.url}")
+        }
         return repos
     }
 
-//    @Deprecated("Use version with group and module")
-//    fun getVersionData(
-//        resolvedDependency: ResolvedDependency
-//    ): VersionData {
-//        val key = VersionKey(
-//            group = resolvedDependency.moduleGroup,
-//            module = resolvedDependency.moduleName,
-//        )
-//        return cache.computeIfAbsent(key) {
-//            getData(key) ?: throw Exception("Can't get version information for $key")
-//        }
-//    }
+    suspend fun getVersionData(key: VersionKey): VersionData {
+        val value = cache[key]
+        if (value == null) {
+            cache[key] = getData(key) ?: throw Exception("Can't get version information for $key")
+        }
+        return getCachedData(key)
+    }
 
     suspend fun getVersionData(
         group: String,
@@ -63,11 +72,7 @@ internal class VersionCache(
             group = group,
             module = module,
         )
-        val value = cache[key]
-        if (value == null) {
-            cache[key] = getData(key) ?: throw Exception("Can't get version information for $key")
-        }
-        return cache[key]!!
+        return getVersionData(key)
     }
 
     fun getCachedData(key: VersionKey): VersionData {
@@ -88,17 +93,27 @@ internal class VersionCache(
                 val module = key.module.replace(".", "/")
                 val url = "${entry.key.url}".removeSuffix("/")
                 val metaUrl = "$url/$group/$module/$POSTFIX"
+                logger.info("url: $url")
                 runCatching {
-                    val metaData = URL(metaUrl).readText()
+                    val connection = URL(metaUrl).openConnection() as HttpURLConnection
+                    val credentials = entry.key.credentials
+                    if (credentials.username != null) {
+                        val token = Base64.getEncoder()
+                            .encodeToString("${credentials.username}:${credentials.password}".toByteArray())
+                        connection.setRequestProperty("Authorization", "Basic $token")
+                    }
+                    connection.connect()
+                    val metaData = connection.inputStream.bufferedReader().readText()
+                    logger.info("response: $metaData")
                     val matcher = "<release>(.+)</release>".toRegex().find(metaData)
                     if (matcher != null) {
                         val lastVersion = matcher.groupValues[1]
                         incrementValue(entry.key)
-                        println("$group:$module = $lastVersion")
+                        logger.info("$group:$module = $lastVersion")
                         return@withContext VersionData(lastVersion)
                     }
                 }.onFailure {
-                    println("Can't metaData $key, url: $metaUrl")
+                    logger.debug("Can't metaData $key, url: $metaUrl", it)
                 }
             }
             return@withContext null

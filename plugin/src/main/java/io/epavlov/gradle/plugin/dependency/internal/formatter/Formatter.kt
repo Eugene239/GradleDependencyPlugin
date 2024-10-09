@@ -1,6 +1,5 @@
 package io.epavlov.gradle.plugin.dependency.internal.formatter
 
-import io.epavlov.gradle.plugin.dependency.DependencyNode
 import org.gradle.api.artifacts.Configuration
 import java.io.File
 

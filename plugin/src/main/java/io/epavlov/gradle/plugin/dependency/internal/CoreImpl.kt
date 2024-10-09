@@ -23,9 +23,8 @@ internal class CoreImpl(
         configurations: List<Configuration>,
     ) = coroutineScope {
         println("EXEC: $startupFlags")
-        val rootDir = File(project.buildDir, "dependencyUI")
+        val rootDir = File(project.buildDir, OUTPUT_PATH)
         if (rootDir.exists()) {
-            rootDir.deleteRecursively()
             rootDir.mkdirs()
         } else {
             rootDir.mkdirs()

@@ -5,11 +5,13 @@ import groovy.util.Node
 import groovy.util.NodeList
 import groovy.xml.XmlParser
 import io.epavlov.gradle.plugin.dependency.internal.filter.RegexFilter
+import org.gradle.api.internal.artifacts.repositories.resolver.MavenResolver
 import java.io.File
 
 internal class PomXMLParserImpl(
     private val filter: RegexFilter
 ) : PomXMLParser {
+    // todo migrate to MavenResolver?
     companion object {
         private const val DEPENDENCIES = "dependencies"
         private const val DEPENDENCY = "dependency"

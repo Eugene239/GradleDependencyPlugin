@@ -1,18 +1,19 @@
 package io.epavlov.gradle.plugin.dependency.internal.filter
 
+import io.epavlov.gradle.plugin.dependency.internal.formatter.DependencyNode
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ResolvedDependency
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
 
-class DependencyFilter(
+internal class DependencyFilter(
     private val project: Project,
     private val regex: Regex
 ) : RegexFilter {
 
     private val rootProjectName = project.rootProject.name
 
-    override fun matches(dependency: io.epavlov.gradle.plugin.dependency.DependencyNode): Boolean {
+    override fun matches(dependency: DependencyNode): Boolean {
         return matches(dependency.name)
     }
 

@@ -8,6 +8,8 @@ import io.epavlov.gradle.plugin.dependency.internal.dependency.DependencyFetcher
 import io.epavlov.gradle.plugin.dependency.internal.dependency.IncomingDependencyFetcher
 import io.epavlov.gradle.plugin.dependency.internal.formatter.DependencyFormatter
 import io.epavlov.gradle.plugin.dependency.internal.formatter.Formatter
+import io.epavlov.gradle.plugin.dependency.internal.formatter.report.MarkdownReportFormatter
+import io.epavlov.gradle.plugin.dependency.internal.formatter.report.ReportFormatter
 import io.epavlov.gradle.plugin.dependency.internal.pom.PomXMLParser
 import io.epavlov.gradle.plugin.dependency.internal.pom.PomXMLParserImpl
 import org.koin.core.Koin
@@ -40,13 +42,11 @@ internal val diModule = module {
             project = get()
         )
     }
-//    single<DependencyFetcher> {
-//        ResolveDependencyFetcher(
-//            filter = get(),
-//            libCache = get(),
-//            pomXMLParser = get()
-//        )
-//    }
+    factory<ReportFormatter> {
+        MarkdownReportFormatter(
+            project = get()
+        )
+    }
 
     factory<DependencyFetcher> {
         IncomingDependencyFetcher(

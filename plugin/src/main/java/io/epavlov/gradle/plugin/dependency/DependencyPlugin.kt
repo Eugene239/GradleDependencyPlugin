@@ -4,6 +4,8 @@ import io.epavlov.gradle.plugin.dependency.internal.StartupFlags
 import io.epavlov.gradle.plugin.dependency.internal.cache.lib.LibCache
 import io.epavlov.gradle.plugin.dependency.internal.cache.version.VersionCache
 import io.epavlov.gradle.plugin.dependency.internal.dependency.IncomingDependencyFetcher
+import io.epavlov.gradle.plugin.dependency.internal.di.diModule
+import io.epavlov.gradle.plugin.dependency.internal.di.koinInstance
 import io.epavlov.gradle.plugin.dependency.internal.filter.DependencyFilter
 import io.epavlov.gradle.plugin.dependency.internal.pom.PomXMLParserImpl
 import kotlinx.coroutines.runBlocking
@@ -11,6 +13,7 @@ import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.Dependency
 
 @Suppress("unused")
 class DependencyPlugin : Plugin<Project> {
@@ -39,12 +42,18 @@ class DependencyPlugin : Plugin<Project> {
             if (printConfiguration) {
                 println("------------------------")
             }
+            setupDI(project)
             registerTask(
                 project = project,
                 extension = extension,
                 configurations = configurations
             )
         }
+    }
+
+    private fun setupDI(project: Project){
+        koinInstance.koin.declare(project)
+        koinInstance.modules(diModule)
     }
 
     private fun registerTask(
@@ -62,7 +71,11 @@ class DependencyPlugin : Plugin<Project> {
             it.getConfigurations().set(configurations)
             it.getExtension().set(extension)
         }
+
         project.tasks.register("dependencyUI", DependencyStartTask::class.java, action)
+        project.tasks.register("dependencyReport", DependencyReportTask::class.java) {
+            it.group = "reporting"
+        }
     }
 
     private fun test(

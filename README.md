@@ -58,8 +58,8 @@ dependencyGraphOptions {
 ```
 
 
-### Task
-
+### Tasks
+#### Make Graph UI
 Plugin will create new gradle task, to execute use
 ``
 $ gralde app:dependencyUI
@@ -70,12 +70,27 @@ You can see dependencies with mismatching versions and can use them as a filter 
 
 (!) opening `dep.html` file not from Android studio can cause `CORS` error
 
+#### Make Dependency report
+``
+$ gralde app:dependencyReport
+``
+Will create a MD file with all outdated versions for all flavours
+If you need to filter dependencies, you can call task with filter option
+``
+gradle app:dependencyReport --filter "io\.epavlov\.gradle.*"
+``
+You will get report on dependencies which matches regex
+
+## TBD
 ### Completed: 
 - make task run after compile task
-### Todo:
-- refactor code
 - generate different `dependency.json` file for all project configurations (optional)
 - make ui pretty (optional)
-- make MD reports
-- library size info
 - make solution for project modules
+- make MD dependency report
+
+### Todo:
+- refactor code
+- library size info
+- regex cmd param
+- refactor from core to usecase
