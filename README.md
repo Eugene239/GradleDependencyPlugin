@@ -1,7 +1,7 @@
 # Gradle Dependency Plugin [![](https://jitpack.io/v/Eugene239/GradleDependencyPlugin.svg)](https://jitpack.io/#Eugene239/GradleDependencyPlugin)
 Plugin to check dependency versions
 
-### Gradle
+## Plugin setup
 
 In `buildSrc/build.gradle`   :
 Add Jitpack repository
@@ -18,7 +18,6 @@ buildscript {
 }
 ```
 
-
 ```gradle
 dependencies {
      classpath("com.github.Eugene239:GradleDependencyPlugin:${latestVersion}")
@@ -31,45 +30,24 @@ In `app` or other module `build.gradle` apply the plugin and use its dependencie
 apply(plugin = "io.epavlov.gradle.plugin.dependency")
 ```
 
-Add configuration
 
-``` groovy
-dependencyGraphOptions {
-    appConfigurationNames = [
-        "flavor1dDebugRuntimeClasspath",
-        "flavor2DebugRuntimeClasspath""
-    ]
-    dependencyNameRegex = "^io\\.epavlov\\.(?!android).*"
-    printConfigurations = false
-    checkVersions = false
-}
-```
-Also you can pass a postfix of configuration name, it will fetch all configuration contains this name
-``` groovy
-dependencyGraphOptions {
-    appConfigurationNames = [
-        "runtimeClasspath",
-    ]
-    dependencyNameRegex = "^io\\.epavlov\\..*"
-    printConfigurations = false
-    checkVersions = false
-}
-```
-
-
-### Tasks
-#### Make Graph UI
+## Gradle asks
+### Make Graph UI
 Plugin will create new gradle task, to execute use
 ```shell
-$ gralde app:dependencyUI
+$ gralde app:dependencyGraph
 ```
-Task will create new directory `app/build/dependencyUI` with html file, open html file in Android
+To filter dependencies, call
+```shell
+$ gradle app:dependencyGraph --filter "io\.epavlov\.gradle.*"
+```
+Task will create new directory `app/build/dependency-ui` with html file, open html file in Android
 studio to see graph
 You can see dependencies with mismatching versions and can use them as a filter to see usage
 
-(!) opening `dep.html` file not from Android studio can cause `CORS` error
+(!) opening `index.html` file not from Android studio can cause `CORS` error
 
-#### Make Dependency report
+### Make Dependency report
 ```shell
 $ gralde app:dependencyReport
 ```
@@ -93,3 +71,4 @@ You will get report on dependencies which matches regex
 - library size info
 - regex cmd param
 - refactor from core to usecase
+- remove koin?

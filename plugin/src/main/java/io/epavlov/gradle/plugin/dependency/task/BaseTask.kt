@@ -1,27 +1,32 @@
-package io.epavlov.gradle.plugin.dependency
+package io.epavlov.gradle.plugin.dependency.task
 
-import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import io.epavlov.gradle.plugin.dependency.internal.OUTPUT_PATH
 import kotlinx.coroutines.runBlocking
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
+import java.io.File
 
 abstract class BaseTask : DefaultTask() {
-    private val scope = CoroutineScope(Dispatchers.Default + CoroutineName(this.name))
 
     @TaskAction
     fun init() {
         runCatching {
+            makeDir()
             runBlocking {
-                scope.launch {
-                    exec()
-                }.join()
+                exec()
             }
         }.onFailure {
             logger.error("Task execution failed", it)
             throw it
+        }
+    }
+
+    private fun makeDir() {
+        val rootDir = File(project.buildDir, OUTPUT_PATH)
+        if (rootDir.exists()) {
+            rootDir.mkdirs()
+        } else {
+            rootDir.mkdirs()
         }
     }
 

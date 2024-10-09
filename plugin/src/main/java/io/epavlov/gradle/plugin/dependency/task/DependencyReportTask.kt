@@ -1,4 +1,4 @@
-package io.epavlov.gradle.plugin.dependency
+package io.epavlov.gradle.plugin.dependency.task
 
 import io.epavlov.gradle.plugin.dependency.internal.usecase.ReportUseCase
 import io.epavlov.gradle.plugin.dependency.internal.usecase.ReportUseCaseParams

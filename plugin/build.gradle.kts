@@ -8,7 +8,7 @@ plugins {
 }
 
 val major = 1
-val minor = 3
+val minor = 4
 val patch = 0
 
 val libraryVersion = LibVersions.getLibVersion(
@@ -38,40 +38,11 @@ buildConfig {
     buildConfigField("String", "PLUGIN_VERSION", "\"${libraryVersion}\"")
 }
 
-//artifactory {
-//    setContextUrl("https://artifactory.TBD.com/artifactory")
-//    publish {
-//        repository {
-//            if (libraryVersion.endsWith("SNAPSHOT")) {
-//                setRepoKey("maven-snapshots")
-//            } else {
-//                setRepoKey("maven")
-//            }
-//            setUsername("${project.properties["ARTIFACTORY_USERNAME"]}")
-//            setPassword("${project.properties["ARTIFACTORY_PASSWORD"]}")
-//        }
-//        defaults {
-//            publications("maven")
-//            setPublishArtifacts(true)
-//            setPublishPom(true)
-//        }
-//    }
-//}
-
-
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
 }
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> { kotlinOptions.jvmTarget = "17" }
-
-//
-//gradle.projectsEvaluated {
-//    tasks.named("artifactoryPublish") {
-//        dependsOn("assemble")
-//    }
-//    println(libraryVersion)
-//}
 
 gradlePlugin {
     plugins {

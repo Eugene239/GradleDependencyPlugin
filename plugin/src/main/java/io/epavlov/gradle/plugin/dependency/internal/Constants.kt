@@ -2,7 +2,7 @@ package io.epavlov.gradle.plugin.dependency.internal
 
 
 const val UNSPECIFIED_VERSION = "unspecified"
-const val OUTPUT_PATH = "dependencyUI"
+const val OUTPUT_PATH = "dependency-ui"
 const val STATUS_OK = "✅"
 const val STATUS_WARN = "⚠\uFE0F"
 const val STATUS_ERROR = "❗"

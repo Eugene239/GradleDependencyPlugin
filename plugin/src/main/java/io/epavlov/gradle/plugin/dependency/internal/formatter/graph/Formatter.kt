@@ -1,4 +1,4 @@
-package io.epavlov.gradle.plugin.dependency.internal.formatter
+package io.epavlov.gradle.plugin.dependency.internal.formatter.graph
 
 import org.gradle.api.artifacts.Configuration
 import java.io.File
@@ -7,7 +7,7 @@ internal interface Formatter {
 
     fun format(node: DependencyNode, outputDir: File): File
 
-    fun copySite(outputDir: File)
+    fun copySite(outputDir: File) : File
 
     fun saveConfigurations(outputDir: File, configurations: List<Configuration>)
 

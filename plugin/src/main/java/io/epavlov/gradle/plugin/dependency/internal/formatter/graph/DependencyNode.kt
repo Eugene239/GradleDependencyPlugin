@@ -1,4 +1,4 @@
-package io.epavlov.gradle.plugin.dependency.internal.formatter
+package io.epavlov.gradle.plugin.dependency.internal.formatter.graph
 
 import kotlinx.serialization.Serializable
 

@@ -1,16 +1,17 @@
 package io.epavlov.gradle.plugin.dependency.internal.dependency
 
-import io.epavlov.gradle.plugin.dependency.internal.formatter.DependencyNode
+import io.epavlov.gradle.plugin.dependency.internal.formatter.graph.DependencyNode
 import io.epavlov.gradle.plugin.dependency.internal.UNSPECIFIED_VERSION
 import io.epavlov.gradle.plugin.dependency.internal.cache.lib.LibCache
 import io.epavlov.gradle.plugin.dependency.internal.cache.lib.LibKey
 import io.epavlov.gradle.plugin.dependency.internal.filter.RegexFilter
-import io.epavlov.gradle.plugin.dependency.internal.formatter.Versions
+import io.epavlov.gradle.plugin.dependency.internal.formatter.graph.Versions
 import io.epavlov.gradle.plugin.dependency.internal.pom.PomDependency
-import io.epavlov.gradle.plugin.dependency.internal.pom.PomXMLParser
+import io.epavlov.gradle.plugin.dependency.internal.pom.PomXMLParserImpl
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -21,9 +22,8 @@ import org.gradle.api.artifacts.result.ResolvedDependencyResult
 
 internal class IncomingDependencyFetcher(
     private val project: Project,
-    private val regexFilter: RegexFilter,
+    private val regexFilter: RegexFilter?,
     private val libCache: LibCache,
-    private val pomXMLParser: PomXMLParser
 ) : DependencyFetcher {
     private val logger = project.logger
 
@@ -31,11 +31,11 @@ internal class IncomingDependencyFetcher(
         logger.lifecycle("####### FETCH ${configuration.name}")
         val incoming = configuration.incoming.resolutionResult.root.dependencies
             .filterIsInstance<ResolvedDependencyResult>()
-            .filter { regexFilter.matches(it) }
+            .filter { regexFilter?.matches(it) != false }
             .toSet()
 
         val parent = DependencyNode(name = configuration.name, isProject = true)
-        logger.lifecycle("incoming size:  ${incoming.size}")
+        logger.lifecycle("incoming size: ${incoming.size}")
         fillDependencyTree(
             parent = parent,
             dependencies = incoming,
@@ -49,9 +49,9 @@ internal class IncomingDependencyFetcher(
         dependencies: Set<ResolvedDependencyResult>,
         pomDependencies: Set<PomDependency> = emptySet(),
     ) {
-        coroutineScope {
+        withContext(Dispatchers.Default) {
             dependencies
-                .filter { regexFilter.matches(it) }
+                .filter { regexFilter?.matches(it) != false }
                 .map { dependency ->
                     async {
                         val selected = dependency.selected
@@ -73,7 +73,7 @@ internal class IncomingDependencyFetcher(
                         } else {
                             selected.dependencies
                                 .filterIsInstance<ResolvedDependencyResult>()
-                                .filter { regexFilter.matches(it) }
+                                .filter { regexFilter?.matches(it) != false }
                                 .toSet()
                         }
 
@@ -111,7 +111,7 @@ internal class IncomingDependencyFetcher(
             version = node.versions.actual ?: node.versions.resolved!!
         )
         val pom = libCache.getLibData(key).pomFile
-        return pomXMLParser.parse(pom)
+        return PomXMLParserImpl(filter = regexFilter).parse(pom)
     }
 
     /**

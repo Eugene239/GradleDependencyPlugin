@@ -9,7 +9,7 @@ import org.gradle.api.internal.artifacts.repositories.resolver.MavenResolver
 import java.io.File
 
 internal class PomXMLParserImpl(
-    private val filter: RegexFilter
+    private val filter: RegexFilter?
 ) : PomXMLParser {
     // todo migrate to MavenResolver?
     companion object {
@@ -46,7 +46,7 @@ internal class PomXMLParserImpl(
         return emptySet()
     }
 
-    private fun getPomDependency(nodeList: NodeList, filter: RegexFilter): PomDependency? {
+    private fun getPomDependency(nodeList: NodeList, filter: RegexFilter?): PomDependency? {
         var groupId: String? = null
         var artifactId: String? = null
         var version: String? = null
@@ -65,7 +65,7 @@ internal class PomXMLParserImpl(
                 }
             }
 
-        if (groupId == null || artifactId == null || !filter.matches("$groupId:$artifactId:$version")) {
+        if (groupId == null || artifactId == null || (filter!= null && !filter.matches("$groupId:$artifactId:$version"))) {
             return null
         }
 

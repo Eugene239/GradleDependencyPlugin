@@ -1,4 +1,4 @@
-package io.epavlov.gradle.plugin.dependency.internal.formatter
+package io.epavlov.gradle.plugin.dependency.internal.formatter.graph
 
 import io.epavlov.gradle.plugin.dependency.internal.StartupFlags
 import io.epavlov.plugin.BuildConfig
@@ -25,10 +25,11 @@ internal class DependencyFormatter(
         return file
     }
 
-    override fun copySite(outputDir: File) {
-        create(outputDir, "index.html")
+    override fun copySite(outputDir: File): File {
+        val site = create(outputDir, "index.html")
         create(outputDir, "main.js")
         create(outputDir, "graph.js")
+        return site
     }
 
     override fun saveConfigurations(outputDir: File, configurations: List<Configuration>) {
@@ -55,15 +56,17 @@ internal class DependencyFormatter(
         file.writeText(json)
     }
 
-    private fun create(outputDir: File, name: String) {
-        kotlin.runCatching {
+    private fun create(outputDir: File, name: String): File {
+        val file = runCatching {
             val url = this::class.java.classLoader.getResource(name) ?: throw Exception("resource not found: $name")
             val bytes = url.readBytes()
             val file = File(outputDir, name)
             file.createNewFile()
             file.writeBytes(bytes)
+            file
         }.onFailure {
-            it.printStackTrace()
+            throw it
         }
+        return file.getOrThrow()
     }
 }
