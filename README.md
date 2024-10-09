@@ -1,6 +1,5 @@
-# Gradle Dependency Plugin
-
-Spike to check dependency versions
+# Gradle Dependency Plugin [![](https://jitpack.io/v/Eugene239/GradleDependencyPlugin.svg)](https://jitpack.io/#Eugene239/GradleDependencyPlugin)
+Plugin to check dependency versions
 
 ### Gradle
 
@@ -61,9 +60,9 @@ dependencyGraphOptions {
 ### Tasks
 #### Make Graph UI
 Plugin will create new gradle task, to execute use
-``
+```shell
 $ gralde app:dependencyUI
-``
+```
 Task will create new directory `app/build/dependencyUI` with html file, open html file in Android
 studio to see graph
 You can see dependencies with mismatching versions and can use them as a filter to see usage
@@ -71,14 +70,14 @@ You can see dependencies with mismatching versions and can use them as a filter 
 (!) opening `dep.html` file not from Android studio can cause `CORS` error
 
 #### Make Dependency report
-``
+```shell
 $ gralde app:dependencyReport
-``
+```
 Will create a MD file with all outdated versions for all flavours
 If you need to filter dependencies, you can call task with filter option
-``
-gradle app:dependencyReport --filter "io\.epavlov\.gradle.*"
-``
+```shell
+$ gradle app:dependencyReport --filter "io\.epavlov\.gradle.*"
+```
 You will get report on dependencies which matches regex
 
 ## TBD
