@@ -39,7 +39,7 @@ $ gralde app:dependencyGraph
 ```
 To filter dependencies, call
 ```shell
-$ gradle app:dependencyGraph --filter "io\.epavlov\.gradle.*"
+$ gradle app:dependencyGraph --filter io\.epavlov\.gradle.*
 ```
 Task will create new directory `app/build/dependency-ui` with html file, open html file in Android
 studio to see graph
@@ -54,7 +54,7 @@ $ gralde app:dependencyReport
 Will create a MD file with all outdated versions for all flavours
 If you need to filter dependencies, you can call task with filter option
 ```shell
-$ gradle app:dependencyReport --filter "io\.epavlov\.gradle.*"
+$ gradle app:dependencyReport --filter io\.epavlov\.gradle.*
 ```
 You will get report on dependencies which matches regex
 
