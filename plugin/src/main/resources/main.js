@@ -1,36 +1,28 @@
 var globalTimeout = null;
 
 var selectedConfiguration = null;
-const graph = new Graph();
+const tree = new Tree();
 
 const TAB_GRAPH = "tab-graph"
 const TAB_VERSIONS = "tab-versions"
 
 var selectedTab = TAB_GRAPH
+var filter = ""
+var latestVersions = [];
 
 function onLoad() {
   isLoading(true)
+  tree.init(document.getElementsByName("tree-container")[0]);
   fetch("configurations.json")
     .then(response => response.json())
     .then(json => {
       setConfigurations(json);
-      //       var configuration = json["configurations"][0].name
-      //       fetch(configuration + "/dependencies.json")
-      //           .then(response => response.json())
-      //               .then(json => {
-      //                   data = json
-      //                   filteredData = json
-      //                   fillConflicts()
-      //                    drawTree()
-      //     })
-      //   })
-      //   .catch(error => console.log(error))
-
     });
     document.getElementsByName("dependency-filter")[0].addEventListener('change', function (event) {
       event.preventDefault();
       if (globalTimeout != null) clearTimeout(globalTimeout);
-      globalTimeout = setTimeout(function () { graph.filter(event.target.value) }, 300);
+      filter = event.target.value;
+      globalTimeout = setTimeout(function () { tree.filter(event.target.value) }, 300);
     });
 }
 
@@ -89,11 +81,9 @@ function fetchConfiguration(name) {
   fetch(name + "/dependencies.json")
     .then(response => response.json())
     .then(json => {
-      graph.data = json
-      graph.filteredData = json
-     // graph.fillConflicts()
-      graph.drawTree()
-      graph.filter(graph.filterTerm);
+      tree.clear();
+      tree.draw(json);
+      tree.filter(this.filter);
       isLoading(false);
     })
 }
@@ -102,6 +92,7 @@ function fetchLatestVersions(){
   fetch("latest-versions.json")
   .then(response => response.json())
   .then(json => {
+    latestVersions = json;
       var container = document.getElementsByName("versions-table")[0]
       Object.keys(json).forEach(key=> {
         var library = key + ":" + json[key]

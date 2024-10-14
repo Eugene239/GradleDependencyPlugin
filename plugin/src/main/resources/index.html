@@ -8,6 +8,7 @@
     <title>Gradle Dependency Plugin</title>
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <script src="graph.js"></script>
+    <script src="tree.js"></script>
     <script src="main.js"></script>
 </head>
 
@@ -29,9 +30,6 @@
         <div class="navbar-end">
             <div class="navbar-item" name="version"> </div>
         </div>
-        <!-- <a class="navbar-item">
-            Versions
-        </a> -->
     </nav>
     <progress class="progress is-small is-info" max="100" name="progress-bar">15%</progress>
 
@@ -45,9 +43,8 @@
             </div>
         </div>
 
+        <div class="m-4 p-4" name="tree-container">
 
-        <div class="panel-block" name="svg-container">
-            <svg name="graph" class="m-4"></svg>
         </div>
     </nav>
 
@@ -62,5 +59,9 @@
           </nav>
     </div>
 </body>
-
+    <style>
+        .node-conflict {
+            fill: var(--bulma-code);
+        }
+    </style>
 </html>

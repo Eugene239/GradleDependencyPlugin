@@ -29,6 +29,7 @@ internal class DependencyFormatter(
         val site = create(outputDir, "index.html")
         create(outputDir, "main.js")
         create(outputDir, "graph.js")
+        create(outputDir, "tree.js")
         return site
     }
 
