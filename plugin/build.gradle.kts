@@ -31,8 +31,20 @@ publishing {
             version = libraryVersion
             from(components["java"])
         }
+        repositories {
+            maven {
+                name = "repsy"
+                url = uri("https://repo.repsy.io/mvn/eugene239/poc")
+                credentials {
+                    username = "eugene239"
+                    password = "4P@ixcZ2xbf6jNF"
+                }
+            }
+        }
     }
+
 }
+
 
 buildConfig {
     buildConfigField("String", "PLUGIN_VERSION", "\"${libraryVersion}\"")

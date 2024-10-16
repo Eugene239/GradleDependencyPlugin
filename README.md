@@ -9,10 +9,7 @@ Add Jitpack repository
 buildscript {
     repositories {
         maven {
-            url = uri("https://jitpack.io")
-            credentials {
-                username = "jp_cbr4gl1v8a77aogv268l7u157j"
-            }
+            url = uri("https://repo.repsy.io/mvn/eugene239/poc")
         }
     }
 }
@@ -20,7 +17,7 @@ buildscript {
 
 ```gradle
 dependencies {
-     classpath("com.github.Eugene239:GradleDependencyPlugin:${latestVersion}")
+     classpath("io.epavlov:gradle-plugin-dependency:${latestVersion}")
 }
 ```
 
