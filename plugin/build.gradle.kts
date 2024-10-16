@@ -9,7 +9,7 @@ plugins {
 
 val major = 1
 val minor = 5
-val patch = 0
+val patch = 1
 
 val libraryVersion = LibVersions.getLibVersion(
     project = project,
