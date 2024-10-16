@@ -90,10 +90,10 @@ internal class VersionCache(
             val sortedRepositories = repositories.entries.sortedByDescending { it.value }
             sortedRepositories.forEach { entry ->
                 val group = key.group.replace(".", "/")
-                val module = key.module.replace(".", "/")
+                val module = key.module
                 val url = "${entry.key.url}".removeSuffix("/")
                 val metaUrl = "$url/$group/$module/$POSTFIX"
-                logger.info("url: $url")
+                logger.info("url: $metaUrl")
                 runCatching {
                     val connection = URL(metaUrl).openConnection() as HttpURLConnection
                     val credentials = entry.key.credentials
@@ -113,7 +113,7 @@ internal class VersionCache(
                         return@withContext VersionData(lastVersion)
                     }
                 }.onFailure {
-                    logger.debug("Can't metaData $key, url: $metaUrl", it)
+                    logger.info("Can't metaData $key, url: $metaUrl", it)
                 }
             }
             return@withContext null

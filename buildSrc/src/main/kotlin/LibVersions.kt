@@ -19,6 +19,7 @@ object LibVersions {
     }
 
     private fun isRelease(project: Project): Boolean {
-        return "false" != project.properties["IS_RELEASE"]
+        println("isRelease ${project.properties["IS_RELEASE"]}")
+        return project.properties["IS_RELEASE"] == "true"
     }
 }
