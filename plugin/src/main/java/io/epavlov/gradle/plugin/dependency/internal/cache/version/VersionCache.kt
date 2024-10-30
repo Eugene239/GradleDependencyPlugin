@@ -3,12 +3,17 @@ package io.epavlov.gradle.plugin.dependency.internal.cache.version
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.gradle.api.Project
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.api.artifacts.result.ResolvedDependencyResult
 import org.gradle.api.internal.artifacts.repositories.DefaultMavenLocalArtifactRepository
 import org.gradle.invocation.DefaultGradle
+import org.w3c.dom.Document
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Base64
+import javax.xml.parsers.DocumentBuilderFactory
 
 
 internal class VersionCache(
@@ -86,6 +91,11 @@ internal class VersionCache(
     }
 
     private suspend fun getData(key: VersionKey): VersionData? {
+        return getDataFromHttp(key)
+    }
+
+
+    private suspend fun getDataFromHttp(key: VersionKey): VersionData? {
         return withContext(Dispatchers.IO) {
             val sortedRepositories = repositories.entries.sortedByDescending { it.value }
             sortedRepositories.forEach { entry ->
@@ -103,14 +113,13 @@ internal class VersionCache(
                         connection.setRequestProperty("Authorization", "Basic $token")
                     }
                     connection.connect()
-                    val metaData = connection.inputStream.bufferedReader().readText()
-                    logger.info("response: $metaData")
-                    val matcher = "<release>(.+)</release>".toRegex().find(metaData)
-                    if (matcher != null) {
-                        val lastVersion = matcher.groupValues[1]
+                    val metaData = connection.inputStream
+                    val latestVersion = fetchVersionByDocument(metaData)
+                    if (latestVersion != null) {
                         incrementValue(entry.key)
-                        logger.info("$group:$module = $lastVersion")
-                        return@withContext VersionData(lastVersion)
+                        logger.warn("metadata: $metaUrl")
+                        logger.info("$group:$module = $latestVersion")
+                        return@withContext VersionData(latestVersion)
                     }
                 }.onFailure {
                     logger.info("Can't metaData $key, url: $metaUrl", it)
@@ -119,6 +128,78 @@ internal class VersionCache(
             return@withContext null
         }
     }
+
+    private fun fetchVersionByDocument(metadata: InputStream): String? {
+        val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+            .parse(metadata)
+        doc.documentElement.normalize()
+
+        getOneByTag(doc, "release")?.run {
+            return this
+        }
+        getOneByTag(doc, "latest")?.run {
+            return this
+        }
+
+        val versionNodes = doc.getElementsByTagName("version")
+        return versionNodes.item(versionNodes.length - 1).textContent
+    }
+
+    private fun getOneByTag(doc: Document, tag: String): String? {
+        val nodeList = doc.getElementsByTagName(tag)
+        return if (nodeList.length == 1) {
+            nodeList.item(0).textContent
+        } else null
+    }
+
+    @Deprecated("Use document parser `fetchVersionByDocument`")
+    private fun fetchVersionByRegex(metadata: InputStream): String? {
+        val text = metadata.bufferedReader().readText()
+        logger.info("response: $text")
+        val matcher = "<release>(.+)</release>".toRegex().find(text)
+        if (matcher != null) {
+            val lastVersion = matcher.groupValues[1]
+            return lastVersion
+        }
+        return null
+    }
+
+    @Deprecated("Take a long time to resolve")
+    private suspend fun getDataFromConfiguration(key: VersionKey): VersionData? {
+        val configuration = project.configurations.detachedConfiguration(
+            project.dependencies.create("${key.group}:${key.module}:+")
+        )
+        val result = configuration.incoming.resolutionResult
+        return result.allDependencies
+            .filterIsInstance<ResolvedDependencyResult>()
+            .firstNotNullOfOrNull {
+                println("${it.selected}, ${it.selected.javaClass}")
+                val version = (it.selected.id as? ModuleComponentIdentifier)?.version
+                println("# $key -> $version")
+                //if (version?.contains("SNAPSHOT") == true) return@firstNotNullOfOrNull null
+                (it.selected.id as? ModuleComponentIdentifier)?.version?.run {
+                    VersionData(this)
+                }
+            }
+    }
+
+//    private suspend fun resolveLatest(keys: List<VersionKey>): List<VersionData> {
+//        val configuration = project.configurations.detachedConfiguration()
+//        configuration.dependencies.addAll(keys.map { project.dependencies.create("${it.group}:${it.module}:+") })
+//        val result = configuration.incoming.resolutionResult
+//        return result.allDependencies
+//            .filterIsInstance<ResolvedDependencyResult>()
+//            .map {
+//                println("${it.selected}, ${it.selected.javaClass}")
+//                val version = (it.selected.id as? ModuleComponentIdentifier)?.version
+//                println("# $key -> $version")
+//                //if (version?.contains("SNAPSHOT") == true) return@firstNotNullOfOrNull null
+//                (it.selected.id as? ModuleComponentIdentifier)?.version?.run {
+//                    VersionData(this)
+//                }
+//            }
+//    }
+
 
     private fun incrementValue(repository: MavenArtifactRepository) {
         val value = repositories[repository] ?: 0
@@ -129,3 +210,4 @@ internal class VersionCache(
         cache.clear()
     }
 }
+
