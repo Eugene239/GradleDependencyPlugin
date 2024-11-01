@@ -45,6 +45,19 @@ publishing {
 
 }
 
+//tasks.create("dummy") {
+//    println("dummy common")
+//    // org.jetbrains.kotlin:kotlin-stdlib:2.0.20
+//    // org.jetbrains.kotlin:kotlin-stdlib-common:2.0.20
+//    val configuration = project.configurations.detachedConfiguration(
+//        project.dependencies.create("org.jetbrains.kotlin","kotlin-stdlib-common", "2.0.20")
+//    )
+//    val files = configuration.resolve()
+//    files.forEach {
+//        println("## $it, ${it.parentFile.path}")
+//    }
+//}
+
 
 buildConfig {
     buildConfigField("String", "PLUGIN_VERSION", "\"${libraryVersion}\"")

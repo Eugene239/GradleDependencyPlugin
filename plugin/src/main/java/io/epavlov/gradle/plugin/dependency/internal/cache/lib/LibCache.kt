@@ -5,6 +5,9 @@ import io.epavlov.gradle.plugin.dependency.internal.cache.version.VersionCache
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ResolvedDependency
 import org.gradle.api.artifacts.result.ResolvedArtifactResult
+import org.gradle.api.component.Artifact
+import org.gradle.jvm.JvmLibrary
+import org.gradle.language.base.artifact.SourcesArtifact
 import org.gradle.maven.MavenModule
 import org.gradle.maven.MavenPomArtifact
 import java.io.File
@@ -58,6 +61,21 @@ internal class LibCache(
             }
         }
         throw Exception("POM not found: $libKey")
+    }
+
+    private fun findJar(libKey: LibKey) : File? {
+        val query = project.dependencies.createArtifactResolutionQuery()
+            .forComponents(libKey.toIdentifier())
+            .withArtifacts(JvmLibrary::class.java, SourcesArtifact::class.java)
+
+        query.execute().resolvedComponents.forEach {
+            val arts = it.getArtifacts(Artifact::class.java)
+            arts.forEach { pom ->
+                val artifact = pom as ResolvedArtifactResult
+                return artifact.file
+            }
+        }
+        return  null
     }
 
     @Deprecated("Don't use it")

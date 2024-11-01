@@ -2,6 +2,7 @@ package io.epavlov.gradle.plugin.dependency
 
 import io.epavlov.gradle.plugin.dependency.internal.di.diModule
 import io.epavlov.gradle.plugin.dependency.internal.di.koinInstance
+import io.epavlov.gradle.plugin.dependency.task.DependencyFlatTask
 import io.epavlov.gradle.plugin.dependency.task.DependencyGraphTask
 import io.epavlov.gradle.plugin.dependency.task.DependencyReportTask
 import org.gradle.api.Plugin
@@ -28,6 +29,9 @@ class DependencyPlugin : Plugin<Project> {
             it.group = "dependency-ui"
         }
         project.tasks.register("dependencyReport", DependencyReportTask::class.java) {
+            it.group = "dependency-ui"
+        }
+        project.tasks.register("dependencyFlat", DependencyFlatTask::class.java) {
             it.group = "dependency-ui"
         }
     }
