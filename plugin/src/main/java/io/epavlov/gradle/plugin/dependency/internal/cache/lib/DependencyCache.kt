@@ -5,6 +5,7 @@ import org.gradle.api.artifacts.result.DependencyResult
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
 import java.util.Collections
 
+// todo find real libraries versions and their children
 internal class DependencyCache(
     private val dependencyFilter: DependencyFilter?
 ) {

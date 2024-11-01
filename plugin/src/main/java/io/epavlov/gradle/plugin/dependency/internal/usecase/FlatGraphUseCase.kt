@@ -5,6 +5,7 @@ import io.epavlov.gradle.plugin.dependency.internal.cache.lib.DependencyCache
 import io.epavlov.gradle.plugin.dependency.internal.cache.version.VersionCache
 import io.epavlov.gradle.plugin.dependency.internal.di.PluginComponent
 import io.epavlov.gradle.plugin.dependency.internal.filter.DependencyFilter
+import io.epavlov.gradle.plugin.dependency.internal.formatter.flat.FlatFormatter
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
@@ -25,6 +26,7 @@ internal class FlatGraphUseCase(
     }
     private val logger = project.logger
     private val dependencyCache = DependencyCache(dependencyFilter = depFilter)
+    private val formatter = FlatFormatter()
 
     override suspend fun execute(params: FlatGraphUseCaseParams): File {
         logger.lifecycle("####### FETCH ${params.configuration.name}")
@@ -42,8 +44,9 @@ internal class FlatGraphUseCase(
             }
             println("#################################")
         }
+        val result = formatter.format(rootDir, cached)
         logger.lifecycle("####### FETCH ${params.configuration.name} END")
-        return File("")
+        return result
     }
 
 
