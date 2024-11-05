@@ -1,4 +1,4 @@
-package io.epavlov.gradle.plugin.dependency.internal.cache.lib
+package io.epavlov.gradle.plugin.dependency.internal
 
 import org.gradle.api.artifacts.component.ComponentIdentifier
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier

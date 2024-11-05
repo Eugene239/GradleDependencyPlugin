@@ -61,10 +61,12 @@ internal class VersionCache(
         return repos
     }
 
-    suspend fun getVersionData(key: VersionKey): VersionData {
+    suspend fun getVersionData(key: VersionKey): Result<VersionData> {
         val value = cache[key]
         if (value == null) {
-            cache[key] = getData(key) ?: throw Exception("Can't get version information for $key")
+            getData(key)?.let {
+                cache[key] = it
+            }
         }
         return getCachedData(key)
     }
@@ -72,7 +74,7 @@ internal class VersionCache(
     suspend fun getVersionData(
         group: String,
         module: String
-    ): VersionData {
+    ): Result<VersionData> {
         val key = VersionKey(
             group = group,
             module = module,
@@ -80,8 +82,13 @@ internal class VersionCache(
         return getVersionData(key)
     }
 
-    fun getCachedData(key: VersionKey): VersionData {
-        return cache[key] ?: throw Exception("Can't find cached data for $key")
+    fun getCachedData(key: VersionKey): Result<VersionData> {
+        val value = cache[key]
+        return if (value != null) {
+            Result.success(value)
+        } else {
+            Result.failure(Exception("Latest version not found for $key"))
+        }
     }
 
     fun getLatestVersions(): Map<String, String> {

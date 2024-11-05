@@ -1,3 +1,8 @@
+import org.gradle.api.internal.artifacts.DefaultModuleIdentifier
+import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
+import org.gradle.api.internal.artifacts.result.DefaultUnresolvedComponentResult
+import org.gradle.internal.component.external.model.DefaultModuleComponentIdentifier
+
 plugins {
     kotlin("jvm") version PluginDependencies.Versions.kotlin
     kotlin("plugin.serialization") version PluginDependencies.Versions.kotlin
@@ -44,7 +49,6 @@ publishing {
     }
 
 }
-
 //tasks.create("dummy") {
 //    println("dummy common")
 //    // org.jetbrains.kotlin:kotlin-stdlib:2.0.20
@@ -55,6 +59,34 @@ publishing {
 //    val files = configuration.resolve()
 //    files.forEach {
 //        println("## $it, ${it.parentFile.path}")
+//    }
+//}
+
+//task("getPom") {
+//    println("### getPOM")
+//    //androidx.fragment:fragment:[1.6.0]
+//    //androidx.fragment:fragment:1.6.0
+//    // org.webkit:android-jsc:r250231
+//    val version = DefaultModuleVersionIdentifier.newId("androidx.fragment", "fragment", "1.6.0")
+//   // val version = DefaultModuleVersionIdentifier.newId("org.webkit", "android-jsc", "r250231")
+//    val result = project.dependencies.createArtifactResolutionQuery()
+//        .forComponents(DefaultModuleComponentIdentifier.newId(version))
+//        .withArtifacts(MavenModule::class.java, MavenPomArtifact::class.java)
+//        .execute()
+//
+//    println("## result size: ${result.components.size}")
+//    result.components.forEach {
+//        println(it)
+//        val failure = (it as? UnresolvedComponentResult)?.failure
+//        failure?.printStackTrace()
+//    }
+//    result.resolvedComponents.forEach {
+//        println(it)
+//        val poms = it.getArtifacts(MavenPomArtifact::class.java)
+//        poms.forEach { pom ->
+//            val artifact = pom as ResolvedArtifactResult
+//            println(artifact.file.path)
+//        }
 //    }
 //}
 

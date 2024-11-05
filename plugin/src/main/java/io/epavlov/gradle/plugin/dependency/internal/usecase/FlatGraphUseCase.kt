@@ -1,11 +1,13 @@
 package io.epavlov.gradle.plugin.dependency.internal.usecase
 
 import io.epavlov.gradle.plugin.dependency.internal.OUTPUT_PATH
-import io.epavlov.gradle.plugin.dependency.internal.cache.lib.DependencyCache
+import io.epavlov.gradle.plugin.dependency.internal.cache.dependency.DependencyCache
+import io.epavlov.gradle.plugin.dependency.internal.cache.pom.PomCache
 import io.epavlov.gradle.plugin.dependency.internal.cache.version.VersionCache
 import io.epavlov.gradle.plugin.dependency.internal.di.PluginComponent
 import io.epavlov.gradle.plugin.dependency.internal.filter.DependencyFilter
 import io.epavlov.gradle.plugin.dependency.internal.formatter.flat.FlatFormatter
+import io.epavlov.gradle.plugin.dependency.internal.pom.PomXMLParserImpl
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
@@ -25,7 +27,18 @@ internal class FlatGraphUseCase(
         null
     }
     private val logger = project.logger
-    private val dependencyCache = DependencyCache(dependencyFilter = depFilter)
+    private val dependencyCache = DependencyCache(
+        dependencyFilter = depFilter,
+        logger = logger,
+        pomCache = PomCache(
+            project = project,
+            versionCache = versionCache,
+        ),
+        xmlParser = PomXMLParserImpl(
+            logger = project.logger,
+            filter = depFilter
+        )
+    )
     private val formatter = FlatFormatter()
 
     override suspend fun execute(params: FlatGraphUseCaseParams): File {
@@ -45,6 +58,17 @@ internal class FlatGraphUseCase(
             println("#################################")
         }
         val result = formatter.format(rootDir, cached)
+        println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+        val failed = dependencyCache.failedValues()
+        failed.forEach {
+            println("%% FAILED ${it.lib}, parent: ${it.parent}")
+            it.error.printStackTrace()
+            println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+        }
+        println("%% FAILED: ${failed.size}")
+        failed.forEach {
+            println("${it.lib} <---- ${it.parent}")
+        }
         logger.lifecycle("####### FETCH ${params.configuration.name} END")
         return result
     }

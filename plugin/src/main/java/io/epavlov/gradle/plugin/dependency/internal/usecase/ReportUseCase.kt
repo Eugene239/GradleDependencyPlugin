@@ -51,17 +51,18 @@ internal class ReportUseCase : UseCase<ReportUseCaseParams, File>, PluginCompone
         }
 
         coroutineScope {
-            versionKeys.map { key ->
+            versionKeys
+                .map { key ->
                 async {
-                    versionCache.getVersionData(key)
+                    versionCache.getVersionData(key).getOrNull()
                 }
             }.awaitAll()
         }
 
         val outdatedLibraries = mutableSetOf<OutdatedDependency>()
         dependencies.forEach { (key, version) ->
-            val latest = versionCache.getCachedData(key)
-            if (latest.latestVersion != version) {
+            val latest = versionCache.getCachedData(key).getOrNull()
+            if (latest != null && latest.latestVersion != version) {
                 outdatedLibraries.add(
                     OutdatedDependency(
                         group = key.group,

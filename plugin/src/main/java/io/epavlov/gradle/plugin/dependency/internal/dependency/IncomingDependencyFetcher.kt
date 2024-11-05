@@ -3,10 +3,9 @@ package io.epavlov.gradle.plugin.dependency.internal.dependency
 import io.epavlov.gradle.plugin.dependency.internal.formatter.graph.DependencyNode
 import io.epavlov.gradle.plugin.dependency.internal.UNSPECIFIED_VERSION
 import io.epavlov.gradle.plugin.dependency.internal.cache.lib.LibCache
-import io.epavlov.gradle.plugin.dependency.internal.cache.lib.LibKey
+import io.epavlov.gradle.plugin.dependency.internal.LibKey
 import io.epavlov.gradle.plugin.dependency.internal.filter.RegexFilter
 import io.epavlov.gradle.plugin.dependency.internal.formatter.graph.Versions
-import io.epavlov.gradle.plugin.dependency.internal.pom.PomDependency
 import io.epavlov.gradle.plugin.dependency.internal.pom.PomXMLParserImpl
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -47,7 +46,7 @@ internal class IncomingDependencyFetcher(
     private suspend fun fillDependencyTree(
         parent: DependencyNode,
         dependencies: Set<ResolvedDependencyResult>,
-        pomDependencies: Set<PomDependency> = emptySet(),
+        pomDependencies: Set<LibKey> = emptySet(),
     ) {
         withContext(Dispatchers.Default) {
             dependencies
@@ -94,8 +93,8 @@ internal class IncomingDependencyFetcher(
         }
     }
 
-    private fun ModuleVersionIdentifier.getPomVersion(pomDependencies: Set<PomDependency>): String? {
-        val pom = pomDependencies.find { it.name == module.name && it.groupId == group }
+    private fun ModuleVersionIdentifier.getPomVersion(pomDependencies: Set<LibKey>): String? {
+        val pom = pomDependencies.find { it.module == module.name && it.group == group }
         if (UNSPECIFIED_VERSION.equals(pom?.version, true)) {
             logger.warn("UNSPECIFIED VERSION: ${this.module}")
             return null
@@ -103,15 +102,15 @@ internal class IncomingDependencyFetcher(
         return pom?.version
     }
 
-    private suspend fun getPomDependencies(node: DependencyNode): Set<PomDependency> {
+    private suspend fun getPomDependencies(node: DependencyNode): Set<LibKey> {
         val split = node.name.split(":")
         val key = LibKey(
             group = split.first(),
             module = split.last(),
             version = node.versions.actual ?: node.versions.resolved!!
         )
-        val pom = libCache.getLibData(key).pomFile
-        return PomXMLParserImpl(filter = regexFilter).parse(pom)
+        val pom = libCache.getLibData(key)?.pomFile ?: throw Exception("TBD")
+        return PomXMLParserImpl(logger = logger, filter = regexFilter).parse(pom)
     }
 
     /**
