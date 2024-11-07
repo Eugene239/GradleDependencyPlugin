@@ -11,18 +11,29 @@ abstract class DependencyFlatTask : BaseTask() {
     @Option(option = "filter", description = "Regex filter for dependencies")
     var filter: String = ""
 
+    @Input
+    @Option(option = "configuration", description = "Configurations to launch")
+    var configuration: String = ""
+
+
     override suspend fun exec() {
+        val configurations = if (configuration.isBlank()) {
+            project.configurations
+                .asSequence()
+                .filter { config -> config.name.contains("runtimeClasspath", true) }
+                .filter { it.name.contains("test", true).not() && it.isCanBeResolved }
+                .toSet()
+        } else {
+            setOf(project.configurations.findByName(configuration))
+        }
+
         val useCase = FlatGraphUseCase(
             project = project,
             filter = filter
         )
-
         val result = useCase.execute(
-            FlatGraphUseCaseParams(
-                configuration = project.configurations.findByName("worldDebugRuntimeClasspath")
-                    ?: throw Exception("Can't find configuration")
-            )
+            FlatGraphUseCaseParams(configurations = configurations)
         )
-        println("Site in ${result.path}")
+        logger.lifecycle("Site in ${result.path}")
     }
 }

@@ -8,13 +8,13 @@ import io.epavlov.gradle.plugin.dependency.internal.LibKey
 import io.epavlov.gradle.plugin.dependency.internal.filter.RegexFilter
 import org.gradle.api.logging.Logger
 import java.io.File
-import kotlin.math.log
 
 internal class PomXMLParserImpl(
     private val logger: Logger,
     private val filter: RegexFilter?
 ) : PomXMLParser {
     // todo migrate to MavenResolver?
+    // todo Get versions from parent, eg: com.google.guava:guava:31.1-jre
     companion object {
         private const val DEPENDENCIES = "dependencies"
         private const val DEPENDENCY = "dependency"

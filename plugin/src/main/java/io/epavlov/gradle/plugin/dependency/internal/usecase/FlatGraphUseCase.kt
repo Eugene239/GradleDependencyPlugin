@@ -8,6 +8,9 @@ import io.epavlov.gradle.plugin.dependency.internal.di.PluginComponent
 import io.epavlov.gradle.plugin.dependency.internal.filter.DependencyFilter
 import io.epavlov.gradle.plugin.dependency.internal.formatter.flat.FlatFormatter
 import io.epavlov.gradle.plugin.dependency.internal.pom.PomXMLParserImpl
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
@@ -42,38 +45,39 @@ internal class FlatGraphUseCase(
     private val formatter = FlatFormatter()
 
     override suspend fun execute(params: FlatGraphUseCaseParams): File {
-        logger.lifecycle("####### FETCH ${params.configuration.name}")
-        val incoming = params.configuration.incoming.resolutionResult.root.dependencies
-            .filterIsInstance<ResolvedDependencyResult>()
-            .filter { depFilter?.matches(it) != false }
-            .toSet()
+        coroutineScope {
+            params.configurations.map { configuration ->
+                async {
+                    logger.lifecycle("####### FETCH ${configuration.name}")
+                    val incoming = configuration.incoming.resolutionResult.root.dependencies
+                        .filterIsInstance<ResolvedDependencyResult>()
+                        .filter { depFilter?.matches(it) != false }
+                        .toSet()
 
-        logger.lifecycle("incoming size: ${incoming.size}")
-        dependencyCache.fill(incoming)
+                    logger.lifecycle("incoming size: ${incoming.size}")
+                    dependencyCache.fill(incoming)
+                    logger.lifecycle("####### FETCH ${configuration.name} END")
+                }
+            }.awaitAll()
+        }
+
         val cached = dependencyCache.cachedValues()
-        cached.forEach { (libKey, libKeys) ->
-            libKeys.forEach { child ->
-                println("# $libKey ---- $child")
-            }
-            println("#################################")
-        }
         val result = formatter.format(rootDir, cached)
-        println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
         val failed = dependencyCache.failedValues()
+        logger.warn("FAILED DEPENDENCIES: ${failed.size}")
         failed.forEach {
-            println("%% FAILED ${it.lib}, parent: ${it.parent}")
-            it.error.printStackTrace()
-            println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+            logger.warn("[PARENT] ${it.parent} ----> [DEPENDENCY] ${it.lib}")
+            if (logger.isInfoEnabled) {
+                it.error.printStackTrace()
+
+            }
         }
-        println("%% FAILED: ${failed.size}")
-        failed.forEach {
-            println("${it.lib} <---- ${it.parent}")
-        }
-        logger.lifecycle("####### FETCH ${params.configuration.name} END")
         return result
     }
 
 
 }
 
-internal data class FlatGraphUseCaseParams(val configuration: Configuration) : UseCaseParams
+internal data class FlatGraphUseCaseParams(
+    val configurations: Set<Configuration>
+) : UseCaseParams

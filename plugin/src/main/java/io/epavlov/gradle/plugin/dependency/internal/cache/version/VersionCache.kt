@@ -21,6 +21,16 @@ internal class VersionCache(
 ) {
     companion object {
         private const val POSTFIX = "maven-metadata.xml"
+        private val PREP_RELEASE_KEYS = setOf(
+            "rc", "alpha", "beta", "snapshot",
+            "preview", "dev", "incubating",
+            // adding keys m1, b9, p2, a3... too
+            *setOf(
+                IntRange(0, 10).map { setOf("m$it", "b$it", "p$it", "a$it") }
+            ).flatten()
+                .flatten()
+                .toTypedArray()
+        )
     }
 
     private val logger = project.logger
@@ -141,15 +151,17 @@ internal class VersionCache(
             .parse(metadata)
         doc.documentElement.normalize()
 
-        getOneByTag(doc, "release")?.run {
-            return this
-        }
-        getOneByTag(doc, "latest")?.run {
-            return this
-        }
-
         val versionNodes = doc.getElementsByTagName("version")
-        return versionNodes.item(versionNodes.length - 1).textContent
+        var version: String? = null
+        (0.. versionNodes.length - 1 )
+            .forEach { index ->
+                val nodeVersion = versionNodes.item(index).textContent
+                if (PREP_RELEASE_KEYS.any { nodeVersion.lowercase().contains(it) }.not()) {
+                    version = nodeVersion
+                }
+            }
+
+        return version
     }
 
     private fun getOneByTag(doc: Document, tag: String): String? {
