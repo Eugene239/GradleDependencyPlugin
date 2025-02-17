@@ -1,3 +1,4 @@
+[![Gradle Plugin](https://img.shields.io/gradle-plugin-portal/v/io.github.eugene239.gradle.plugin.dependency)](https://plugins.gradle.org/plugin/io.github.eugene239.gradle.plugin.dependency)
 # Gradle Dependency Plugin
 Plugin to check dependency versions
 
@@ -7,9 +8,8 @@ Plugin to check dependency versions
 In `app` or other module `build.gradle` apply the plugin and use its dependencies:
 
 ```gradle
-apply(plugin = "io.github.eugene239.gradle.plugin.dependency")
+apply(plugin = "io.github.eugene239.gradle.plugin.dependency") version $latest
 ```
-
 
 ## Gradle asks
 ### Make Graph UI

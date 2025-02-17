@@ -4,5 +4,5 @@ import java.io.File
 
 internal interface ReportFormatter {
 
-    fun format(outdated: Set<OutdatedDependency>) : File
+    fun format(outdated: Collection<OutdatedDependency>): File
 }

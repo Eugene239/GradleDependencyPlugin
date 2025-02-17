@@ -1,0 +1,18 @@
+[versions]
+kotlin = "1.9.22"
+kotlinx-serialization = "1.6.2"
+kotlinx-coroutines = "1.9.0"
+freemarker = "2.3.33"
+build-config = "5.4.0"
+gradle-publish = "1.3.1"
+
+[libraries]
+freemarker = { group = "org.freemarker", name = "freemarker", version.ref = "freemarker" }
+kotlinx-serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlinx-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+build-config = { id = "com.github.gmazzo.buildconfig", version.ref = "build-config" }
+gradle-publish = { id = "com.gradle.plugin-publish", version.ref = "gradle-publish" }

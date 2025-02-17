@@ -7,10 +7,6 @@ buildscript {
     }
 }
 
-plugins {
-    id("org.jetbrains.kotlin.jvm") version PluginDependencies.Versions.kotlin apply false
-}
-
 allprojects {
     repositories {
         mavenCentral()

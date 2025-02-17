@@ -11,7 +11,7 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.net.URL
 
-class DefaultUiSaver(
+internal class DefaultUiSaver(
     private val logger: Logger
 ) : UiSaver {
     companion object {

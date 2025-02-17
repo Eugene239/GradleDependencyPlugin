@@ -1,7 +1,5 @@
 package io.github.eugene239.gradle.plugin.dependency
 
-import io.github.eugene239.gradle.plugin.dependency.internal.di.diModule
-import io.github.eugene239.gradle.plugin.dependency.internal.di.koinInstance
 import io.github.eugene239.gradle.plugin.dependency.task.DependencyGraphTask
 import io.github.eugene239.gradle.plugin.dependency.task.DependencyReportTask
 import org.gradle.api.Plugin
@@ -12,15 +10,8 @@ class DependencyPlugin : Plugin<Project> {
 
     override fun apply(project: Project) {
         project.afterEvaluate {
-            setupDI(project)
             registerTask(project = project)
         }
-    }
-
-    // todo delete?
-    private fun setupDI(project: Project){
-        koinInstance.koin.declare(project)
-        koinInstance.modules(diModule)
     }
 
     private fun registerTask(project: Project, ) {

@@ -16,6 +16,7 @@ import java.util.Base64
 import javax.xml.parsers.DocumentBuilderFactory
 
 
+@Suppress("UnstableApiUsage")
 internal class VersionCache(
     private val project: Project
 ) {
@@ -52,8 +53,9 @@ internal class VersionCache(
                 ?.filterIsInstance<MavenArtifactRepository>()
                 .orEmpty()
         )
-        val settingsRepos = (project.gradle as? DefaultGradle)?.settings?.pluginManagement?.repositories.orEmpty()
-            .filterIsInstance<MavenArtifactRepository>()
+        val settingsRepos =
+            (project.gradle as? DefaultGradle)?.settings?.pluginManagement?.repositories.orEmpty()
+                .filterIsInstance<MavenArtifactRepository>()
 
         val resolutionManagement =
             (project.gradle as? DefaultGradle)?.settings?.dependencyResolutionManagement
@@ -66,7 +68,7 @@ internal class VersionCache(
         repos.removeIf { it is DefaultMavenLocalArtifactRepository }
         logger.info("REPOSITORIES")
         repos.forEach {
-            logger.info ("${it.name} ${it.url}")
+            logger.info("${it.name} ${it.url}")
         }
         return repos
     }
@@ -153,7 +155,7 @@ internal class VersionCache(
 
         val versionNodes = doc.getElementsByTagName("version")
         var version: String? = null
-        (0.. versionNodes.length - 1 )
+        (0..<versionNodes.length)
             .forEach { index ->
                 val nodeVersion = versionNodes.item(index).textContent
                 if (PREP_RELEASE_KEYS.any { nodeVersion.lowercase().contains(it) }.not()) {
@@ -183,7 +185,7 @@ internal class VersionCache(
         return null
     }
 
-    @Deprecated("Take a long time to resolve")
+    @Suppress("RedundantSuspendModifier", "Takes a long time to resolve")
     private suspend fun getDataFromConfiguration(key: VersionKey): VersionData? {
         val configuration = project.configurations.detachedConfiguration(
             project.dependencies.create("${key.group}:${key.module}:+")
@@ -192,32 +194,12 @@ internal class VersionCache(
         return result.allDependencies
             .filterIsInstance<ResolvedDependencyResult>()
             .firstNotNullOfOrNull {
-                println("${it.selected}, ${it.selected.javaClass}")
                 val version = (it.selected.id as? ModuleComponentIdentifier)?.version
-                println("# $key -> $version")
-                //if (version?.contains("SNAPSHOT") == true) return@firstNotNullOfOrNull null
-                (it.selected.id as? ModuleComponentIdentifier)?.version?.run {
+                version?.run {
                     VersionData(this)
                 }
             }
     }
-
-//    private suspend fun resolveLatest(keys: List<VersionKey>): List<VersionData> {
-//        val configuration = project.configurations.detachedConfiguration()
-//        configuration.dependencies.addAll(keys.map { project.dependencies.create("${it.group}:${it.module}:+") })
-//        val result = configuration.incoming.resolutionResult
-//        return result.allDependencies
-//            .filterIsInstance<ResolvedDependencyResult>()
-//            .map {
-//                println("${it.selected}, ${it.selected.javaClass}")
-//                val version = (it.selected.id as? ModuleComponentIdentifier)?.version
-//                println("# $key -> $version")
-//                //if (version?.contains("SNAPSHOT") == true) return@firstNotNullOfOrNull null
-//                (it.selected.id as? ModuleComponentIdentifier)?.version?.run {
-//                    VersionData(this)
-//                }
-//            }
-//    }
 
 
     private fun incrementValue(repository: MavenArtifactRepository) {

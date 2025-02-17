@@ -3,6 +3,7 @@ package io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph
 import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.StartupFlags
 import io.github.eugene239.plugin.BuildConfig
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
@@ -13,6 +14,7 @@ import java.io.File
 internal class FlatFormatter(
     private val logger: Logger
 ) {
+    @OptIn(ExperimentalSerializationApi::class)
     private val prettyEncoder = Json {
         prettyPrint = true
         explicitNulls = false
@@ -49,7 +51,7 @@ internal class FlatFormatter(
     fun saveConfigurations(
         outputDir: File,
         configurations: Collection<Configuration>,
-        startupFlags : StartupFlags = StartupFlags(fetchVersions = false)
+        startupFlags: StartupFlags = StartupFlags(fetchVersions = false)
     ) {
         val pluginConfiguration = PluginConfiguration(
             version = BuildConfig.PLUGIN_VERSION,

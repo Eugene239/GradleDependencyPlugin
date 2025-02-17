@@ -1,29 +1,31 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.usecase
 
+import io.github.eugene239.gradle.plugin.dependency.internal.OUTPUT_PATH
 import io.github.eugene239.gradle.plugin.dependency.internal.UNSPECIFIED_VERSION
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.version.VersionCache
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.version.VersionKey
-import io.github.eugene239.gradle.plugin.dependency.internal.di.PluginComponent
 import io.github.eugene239.gradle.plugin.dependency.internal.filter.DependencyFilter
+import io.github.eugene239.gradle.plugin.dependency.internal.formatter.report.DependencyStatus
 import io.github.eugene239.gradle.plugin.dependency.internal.formatter.report.MarkdownReportFormatter
 import io.github.eugene239.gradle.plugin.dependency.internal.formatter.report.OutdatedDependency
-import io.github.eugene239.gradle.plugin.dependency.internal.formatter.report.OutdatedVersion
 import io.github.eugene239.gradle.plugin.dependency.internal.formatter.report.ReportFormatter
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import org.gradle.api.Project
-import org.koin.core.component.inject
 import java.io.File
 
-internal class ReportUseCase : UseCase<ReportUseCaseParams, File>, PluginComponent {
+internal class ReportUseCase(
+    private val versionCache: VersionCache
+) : UseCase<ReportUseCaseParams, File> {
 
-    private val versionCache: VersionCache by inject()
 
     override suspend fun execute(params: ReportUseCaseParams): File = with(params) {
         val versionKeys = mutableSetOf<VersionKey>()
         val dependencies = mutableMapOf<VersionKey, String?>()
-        val formatter: ReportFormatter = MarkdownReportFormatter(project = project)
+        val formatter: ReportFormatter = MarkdownReportFormatter(
+            outputDirectory = File(project.layout.buildDirectory.asFile.get(), OUTPUT_PATH)
+        )
 
         val depFilter: DependencyFilter? = if (filter.isBlank().not()) {
             DependencyFilter(project, Regex(filter))
@@ -53,30 +55,31 @@ internal class ReportUseCase : UseCase<ReportUseCaseParams, File>, PluginCompone
         coroutineScope {
             versionKeys
                 .map { key ->
-                async {
-                    versionCache.getVersionData(key).getOrNull()
-                }
-            }.awaitAll()
+                    async {
+                        versionCache.getVersionData(key).getOrNull()
+                    }
+                }.awaitAll()
         }
 
         val outdatedLibraries = mutableSetOf<OutdatedDependency>()
         dependencies.forEach { (key, version) ->
             val latest = versionCache.getCachedData(key).getOrNull()
-            if (latest != null && latest.latestVersion != version) {
+            if (latest != null && latest.latestVersion != version && version != null) {
                 outdatedLibraries.add(
                     OutdatedDependency(
-                        group = key.group,
-                        module = key.module,
-                        versions = OutdatedVersion(
-                            current = version.orEmpty(),
-                            latest = latest.latestVersion
-                        )
+                        name = "${key.group}:${key.module}",
+                        currentVersion = version,
+                        latestVersion = latest.latestVersion
                     )
                 )
             }
         }
-        project.logger.warn("outdated: ${outdatedLibraries.size}")
-        return formatter.format(outdatedLibraries)
+
+        return formatter.format(
+            outdatedLibraries.filter { DependencyStatus.OK != it.status }.also {
+                project.logger.warn("outdated: ${it.size}")
+            }
+        )
     }
 }
 

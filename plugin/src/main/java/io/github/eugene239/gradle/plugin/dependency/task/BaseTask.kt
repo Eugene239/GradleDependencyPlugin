@@ -22,7 +22,7 @@ abstract class BaseTask : DefaultTask() {
     }
 
     private fun makeDir() {
-        val rootDir = File(project.buildDir, OUTPUT_PATH)
+        val rootDir = File(project.layout.buildDirectory.asFile.get(), OUTPUT_PATH)
         if (rootDir.exists()) {
             rootDir.mkdirs()
         } else {

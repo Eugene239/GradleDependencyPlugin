@@ -5,7 +5,6 @@ import io.github.eugene239.gradle.plugin.dependency.internal.StartupFlags
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.dependency.DependencyCache
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.pom.PomCache
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.version.VersionCache
-import io.github.eugene239.gradle.plugin.dependency.internal.di.PluginComponent
 import io.github.eugene239.gradle.plugin.dependency.internal.filter.DependencyFilter
 import io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph.FlatFormatter
 import io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph.DependencyFormatter
@@ -20,17 +19,16 @@ import kotlinx.coroutines.coroutineScope
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
-import org.koin.core.component.inject
 import java.io.File
 
 internal class GraphUseCase(
     project: Project,
     filter: String
-) : UseCase<GraphUseCaseParams, File>, PluginComponent {
+) : UseCase<GraphUseCaseParams, File> {
 
-    private val versionCache: VersionCache by inject()
+    private val versionCache = VersionCache(project)
     private val rootDir =
-        File("${project.buildDir}${File.separator}$OUTPUT_PATH")
+        File("${project.layout.buildDirectory.asFile.get()}${File.separator}$OUTPUT_PATH")
     private val depFilter: DependencyFilter? = if (filter.isBlank().not()) {
         DependencyFilter(project, Regex(filter))
     } else {
@@ -105,7 +103,6 @@ internal class GraphUseCase(
         formatter.saveTopDependencies(outputDir, incoming.map { it.toLibKey() })
         logger.lifecycle("####### PROCESSING ${configuration.name} END")
     }
-
 
 
 }

@@ -5,7 +5,8 @@
 - make ui pretty (optional)
 - make solution for project modules
 - make MD dependency report
-
+- remove koin?
+- 
 ### Todo:
 - update doc after publishing 
 - refactor code

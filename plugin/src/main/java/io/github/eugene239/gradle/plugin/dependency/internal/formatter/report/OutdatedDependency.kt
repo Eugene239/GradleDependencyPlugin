@@ -1,12 +1,30 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.formatter.report
 
 internal data class OutdatedDependency(
-    val group: String,
-    val module: String,
-    val versions: OutdatedVersion
+    val name: String,
+    val currentVersion: String,
+    val latestVersion: String,
+    val status: DependencyStatus = DependencyStatus.determine(currentVersion, latestVersion),
 )
 
-internal data class OutdatedVersion(
-    val current: String,
-    val latest: String
-)
+internal enum class DependencyStatus(private val text: String) {
+    OK("✅"), WARN("⚠\uFE0F"), FAIL("❗");
+
+    override fun toString(): String {
+        return text
+    }
+
+    companion object {
+
+        fun determine(version: String, latestVersion: String): DependencyStatus {
+            if (version == latestVersion) return OK
+            val currentMajor = version.split(".").first().toIntOrNull() ?: 0
+            val latestMajor = latestVersion.split(".").first().toIntOrNull() ?: 0
+            return if (currentMajor < latestMajor) {
+                FAIL
+            } else {
+                WARN
+            }
+        }
+    }
+}

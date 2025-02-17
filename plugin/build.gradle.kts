@@ -1,11 +1,10 @@
 plugins {
-    kotlin("jvm") version PluginDependencies.Versions.kotlin
-    kotlin("plugin.serialization") version PluginDependencies.Versions.kotlin
-    id("com.github.gmazzo.buildconfig") version "5.4.0"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.build.config)
+    alias(libs.plugins.gradle.publish)
     id("maven-publish")
-    id("com.gradle.plugin-publish") version "1.3.1"
     groovy
-   // id("java-gradle-plugin")
 }
 
 val major = 0
@@ -24,7 +23,6 @@ var projectArtifactId = "gradle-plugin-dependency"
 version = libraryVersion
 
 publishing {
-    println(libraryVersion)
     publications {
         create<MavenPublication>("gradle") {
             groupId = "io.github.eugene239"
@@ -39,7 +37,18 @@ publishing {
                     url.set("https://github.com/Eugene239/GradleDependencyPlugin")
                 }
             }
-
+        }
+        create<MavenPublication>("demolib") {
+            groupId = "io.github.eugene239"
+            artifactId = projectArtifactId
+            version = libraryVersion
+            from(components["java"])
+            repositories {
+                maven {
+                    name = "projectLocal"
+                    url = uri("${rootDir}/localMavenRepo")
+                }
+            }
         }
     }
 
@@ -61,11 +70,11 @@ gradlePlugin {
     vcsUrl.set("https://github.com/Eugene239/GradleDependencyPlugin")
     plugins {
         create("GradleDependencyPlugin") {
-
             id = "io.github.eugene239.gradle.plugin.dependency"
             implementationClass = "io.github.eugene239.gradle.plugin.dependency.DependencyPlugin"
             displayName = "Gralde Dependency plugin"
             description = "View project dependecy tree"
+            @Suppress("UnstableApiUsage")
             tags.set(listOf("graph", "dependencies"))
         }
     }
@@ -73,9 +82,7 @@ gradlePlugin {
 
 dependencies {
     implementation(gradleApi())
-    implementation(Dependencies.Libraries.kotlinxSerialization)
-    implementation(Dependencies.Libraries.coroutines)
-    // DI
-    implementation(Dependencies.Libraries.koin)
-    testImplementation("junit:junit:4.13.2")
+    implementation(libs.kotlinx.serialization)
+    implementation(libs.kotlinx.coroutines)
+    implementation(libs.freemarker)
 }

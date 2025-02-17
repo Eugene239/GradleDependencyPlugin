@@ -13,7 +13,6 @@ import org.gradle.api.artifacts.result.ResolvedDependencyResult
 import org.gradle.api.logging.Logger
 import java.util.Collections
 
-// todo make parallel
 internal class DependencyCache(
     private val xmlParser: PomXMLParser,
     private val dependencyFilter: DependencyFilter?,
@@ -34,9 +33,9 @@ internal class DependencyCache(
         }
     }
 
-    var limit = Int.MAX_VALUE
+    private var limit = Int.MAX_VALUE
 
-    suspend fun fillRealChildren(libKey: LibKey, parent: LibKey?, iteration: Int = 0) {
+    private suspend fun fillRealChildren(libKey: LibKey, parent: LibKey?, iteration: Int = 0) {
         if (cache[libKey] != null) return
         logger.info("fillRealChildren $libKey,  cached: ${cache.containsKey(libKey)}, cacheSize: ${cache.size}")
         val pom = pomCache.getPom(libKey)

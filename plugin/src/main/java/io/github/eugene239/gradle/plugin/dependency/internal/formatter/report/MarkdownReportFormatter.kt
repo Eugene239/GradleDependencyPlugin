@@ -1,58 +1,34 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.formatter.report
 
-import io.github.eugene239.gradle.plugin.dependency.internal.OUTPUT_PATH
-import io.github.eugene239.gradle.plugin.dependency.internal.STATUS_ERROR
-import io.github.eugene239.gradle.plugin.dependency.internal.STATUS_OK
-import io.github.eugene239.gradle.plugin.dependency.internal.STATUS_WARN
-import org.gradle.api.Project
+import freemarker.template.Configuration
+import freemarker.template.TemplateExceptionHandler
+import io.github.eugene239.plugin.BuildConfig
 import java.io.File
 
-// todo change to template writer
 internal class MarkdownReportFormatter(
-    private val project: Project
+    private val outputDirectory: File
 ) : ReportFormatter {
 
-
-    override fun format(outdated: Set<OutdatedDependency>): File {
+    override fun format(outdated: Collection<OutdatedDependency>): File {
         val file = createFile()
-        file.writeText("## Dependency Report\n")
-        if (outdated.isEmpty()) {
-            file.appendText("$STATUS_OK Everything is up-to-date")
-            return file
+        val config = Configuration(Configuration.VERSION_2_3_33).apply {
+            defaultEncoding = "UTF-8"
+            logTemplateExceptions = true
+            templateExceptionHandler = TemplateExceptionHandler.RETHROW_HANDLER
+            setClassForTemplateLoading(this::class.java, "/")
         }
-
-        file.appendText(
-            """
-                | Name | Status | Version | Latest version |
-                | ---- | ------ | ------- | -------------- |
-        """.trimIndent()
+        val template = config.getTemplate("ReportTemplate.ftl")
+        val data = mapOf(
+            "dependencies" to outdated.sortedByDescending { it.status.ordinal },
+            "version" to BuildConfig.PLUGIN_VERSION
         )
-        val sorted = outdated.sortedBy { getVersionStatus(it).ordinal }
-        sorted.forEach { dep ->
-            file.appendText("\n| ${dep.group}:${dep.module} | ${getVersionStatus(dep).text} | ${dep.versions.current} | ${dep.versions.latest} |")
-        }
-
+        template.process(data, file.writer())
         return file
     }
 
-    private fun getVersionStatus(outdatedDependency: OutdatedDependency): Status {
-        val versions = outdatedDependency.versions
-        val currentMajor = versions.current.split(".").first().toIntOrNull() ?: 0
-        val latestMajor = versions.latest.split(".").first().toIntOrNull() ?: 0
-        return if (currentMajor < latestMajor) {
-            Status.ERROR
-        } else {
-            Status.WARN
-        }
-    }
-
-    private enum class Status(val text: String) {
-        ERROR(STATUS_ERROR),
-        WARN(STATUS_WARN)
-    }
 
     private fun createFile(): File {
-        val dir = File(project.buildDir, OUTPUT_PATH)
+        val dir = outputDirectory
         if (dir.exists().not()) {
             dir.mkdirs()
         }
