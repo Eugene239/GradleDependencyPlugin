@@ -63,7 +63,9 @@ java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
 }
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> { kotlinOptions.jvmTarget = "17" }
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions.jvmTarget = "17"
+}
 
 gradlePlugin {
     website.set("https://github.com/Eugene239/GradleDependencyPlugin")
@@ -85,4 +87,10 @@ dependencies {
     implementation(libs.kotlinx.serialization)
     implementation(libs.kotlinx.coroutines)
     implementation(libs.freemarker)
+    implementation(libs.ktor.client)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.content.negotiation)
+    implementation(libs.ktor.serialization.xml)
+
+    testImplementation("junit:junit:4.13.2")
 }

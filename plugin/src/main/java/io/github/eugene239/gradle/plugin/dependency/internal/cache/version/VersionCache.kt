@@ -1,9 +1,12 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.cache.version
 
+import io.github.eugene239.gradle.plugin.dependency.internal.service.Repository
+import io.github.eugene239.gradle.plugin.dependency.internal.service.toRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.gradle.api.Project
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
 import org.gradle.api.internal.artifacts.repositories.DefaultMavenLocalArtifactRepository
@@ -12,10 +15,9 @@ import org.w3c.dom.Document
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.Base64
 import javax.xml.parsers.DocumentBuilderFactory
 
-
+@Deprecated("TODO DELETE")
 @Suppress("UnstableApiUsage")
 internal class VersionCache(
     private val project: Project
@@ -36,41 +38,38 @@ internal class VersionCache(
 
     private val logger = project.logger
     private val cache = HashMap<VersionKey, VersionData>()
-    private val repositories: MutableMap<MavenArtifactRepository, Int> by lazy {
+    private val repositories: MutableMap<Repository, Int> by lazy {
         getRepositories()
             .associateWith { 0 }
             .toMutableMap()
     }
 
-    private fun getRepositories(): Set<MavenArtifactRepository> {
-        val repos = mutableSetOf<MavenArtifactRepository>()
-        repos.addAll(
-            project.repositories
-                .filterIsInstance<MavenArtifactRepository>()
-        )
-        repos.addAll(
-            project.parent?.repositories
-                ?.filterIsInstance<MavenArtifactRepository>()
-                .orEmpty()
-        )
-        val settingsRepos =
-            (project.gradle as? DefaultGradle)?.settings?.pluginManagement?.repositories.orEmpty()
-                .filterIsInstance<MavenArtifactRepository>()
+    private fun getRepositories(): Set<Repository> {
+        val repos = mutableSetOf<Repository>()
+        repos.addAll(project.repositories.filterRepositories())
+        repos.addAll(project.parent?.repositories.filterRepositories())
 
-        val resolutionManagement =
-            (project.gradle as? DefaultGradle)?.settings?.dependencyResolutionManagement
-                ?.repositories.orEmpty()
-                .filterIsInstance<MavenArtifactRepository>()
+        val settingsRepos = (project.gradle as? DefaultGradle)?.settings?.pluginManagement
+            ?.repositories.filterRepositories()
+
+        val resolutionManagement = (project.gradle as? DefaultGradle)?.settings
+            ?.dependencyResolutionManagement?.repositories.filterRepositories()
 
         repos.addAll(settingsRepos)
         repos.addAll(resolutionManagement)
 
-        repos.removeIf { it is DefaultMavenLocalArtifactRepository }
         logger.info("REPOSITORIES")
         repos.forEach {
             logger.info("${it.name} ${it.url}")
         }
         return repos
+    }
+
+    private fun RepositoryHandler?.filterRepositories(): List<Repository> {
+        return orEmpty()
+            .filterIsInstance<MavenArtifactRepository>()
+            .filterNot { it is DefaultMavenLocalArtifactRepository }
+            .map { it.toRepository() }
     }
 
     suspend fun getVersionData(key: VersionKey): Result<VersionData> {
@@ -125,12 +124,12 @@ internal class VersionCache(
                 logger.info("url: $metaUrl")
                 runCatching {
                     val connection = URL(metaUrl).openConnection() as HttpURLConnection
-                    val credentials = entry.key.credentials
-                    if (credentials.username != null) {
-                        val token = Base64.getEncoder()
-                            .encodeToString("${credentials.username}:${credentials.password}".toByteArray())
-                        connection.setRequestProperty("Authorization", "Basic $token")
-                    }
+//                    val credentials = entry.key.credentials
+//                    if (credentials.username != null) {
+//                        val token = Base64.getEncoder()
+//                            .encodeToString("${credentials.username}:${credentials.password}".toByteArray())
+//                        connection.setRequestProperty("Authorization", "Basic $token")
+//                    }
                     connection.connect()
                     val metaData = connection.inputStream
                     val latestVersion = fetchVersionByDocument(metaData)
@@ -202,7 +201,7 @@ internal class VersionCache(
     }
 
 
-    private fun incrementValue(repository: MavenArtifactRepository) {
+    private fun incrementValue(repository: Repository) {
         val value = repositories[repository] ?: 0
         repositories[repository] = value.inc()
     }
