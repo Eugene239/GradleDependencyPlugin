@@ -1,11 +1,11 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.service
 
+import io.github.eugene239.gradle.plugin.dependency.internal.service.serializer.MavenPomPropertiesXmlSerializer
 import kotlinx.serialization.Serializable
 import nl.adaptivity.xmlutil.serialization.XmlElement
 import nl.adaptivity.xmlutil.serialization.XmlSerialName
 
 @Serializable
-@XmlSerialName("project", "http://maven.apache.org/POM/4.0.0")
 internal data class Pom(
     @XmlElement(true)
     @XmlSerialName("groupId")

@@ -5,8 +5,9 @@ import io.github.eugene239.gradle.plugin.dependency.internal.StartupFlags
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.children.ChildrenCache
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.pom.PomCache
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.repository.RepositoryCache
+import io.github.eugene239.gradle.plugin.dependency.internal.cache.rethrowCancellationException
 import io.github.eugene239.gradle.plugin.dependency.internal.filter.DependencyFilter
-import io.github.eugene239.gradle.plugin.dependency.internal.provider.RepositoryProvider
+import io.github.eugene239.gradle.plugin.dependency.internal.provider.DefaultRepositoryProvider
 import io.github.eugene239.gradle.plugin.dependency.internal.service.DefaultMavenService
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenService
 import io.github.eugene239.gradle.plugin.dependency.internal.toLibKey
@@ -16,17 +17,21 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
 import org.gradle.api.logging.Logger
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 
 internal class GraphUseCase(
     private val rootDir: File,
     private val logger: Logger,
-    private val repositoryProvider: RepositoryProvider,
-
+    private val dependencyFilter: DependencyFilter,
+    private val repositoryProvider: DefaultRepositoryProvider,
     private val mavenService: MavenService = DefaultMavenService(
         logger = logger
     ),
@@ -46,38 +51,38 @@ internal class GraphUseCase(
     )
 ) : UseCase<GraphUseCaseParams, File> {
 
+    private val map = ConcurrentHashMap<LibKey, List<LibKey>>()
+
+
     override suspend fun execute(params: GraphUseCaseParams): File {
+        logger.info("Start execution with params: $params")
         rootDir.mkdirs()
 
-        params.configurations.map { configuration ->
-            processConfiguration(configuration, params.filter)
+        val semaphore = Semaphore(params.limit)
+
+        val dependencies = params.configurations
+            .map { configuration ->
+                configuration.incoming.resolutionResult.root.dependencies
+                    .asSequence()
+                    .filterIsInstance<ResolvedDependencyResult>()
+                    .filter { dependencyFilter.isSubmodule(it).not() && dependencyFilter.matches(it) }
+                    .toSet()
+                    .map { it.toLibKey() }
+            }
+            .flatten()
+            .toSet()
+
+        logger.lifecycle("Getting info about ${dependencies.size} dependencies")
+        if (logger.isInfoEnabled) {
+            dependencies.forEach {
+                logger.info("- $it")
+            }
         }
 
-        val result = uiSaver.save(rootDir)
-        return result
-    }
-
-    private suspend fun processConfiguration(
-        configuration: Configuration,
-        filter: DependencyFilter?
-    ) {
-        logger.lifecycle("####### PROCESSING ${configuration.name}")
-        val dependencies = configuration.incoming.resolutionResult.root.dependencies
-            .filterIsInstance<ResolvedDependencyResult>()
-            .filter { filter?.matches(it) != false }
-            .toSet()
-            .map { it.toLibKey() }
-
-
         withContext(ioDispatcher) {
-            dependencies
-                // .filterIndexed { index, libKey -> index == 3 }
-                .map {
-                    async { processDependency(libKey = it) }
-                }.awaitAll()
-//                .forEach {
-//                    processDependency(it)
-//                }
+            dependencies.map {
+                async { semaphore.withPermit { processDependency(libKey = it) } }
+            }.awaitAll()
         }
 
         println("%%%%%%%%%%%%%% ERRORS %%%%%%%%%%%%%%%%")
@@ -88,29 +93,32 @@ internal class GraphUseCase(
             entry.value.exceptionOrNull()?.printStackTrace()
         }
 
-        logger.lifecycle("####### PROCESSING ${configuration.name} END")
+        val result = uiSaver.save(rootDir)
+        return result
     }
 
-    private suspend fun processDependency(libKey: LibKey) {
-        val children = childrenCache.get(libKey)
-        children.onSuccess {
-            logger.info("----------------- CHILDREN ------------------------")
-            logger.info("$libKey")
-            it.forEach { child ->
-                logger.info("[$libKey] -- $child")
-                processDependency(child)
+    private suspend fun processDependency(libKey: LibKey): Unit = coroutineScope {
+        logger.info("processDependency: $libKey")
+        if (map[libKey] != null) return@coroutineScope
+
+        val childrenResult = childrenCache.get(libKey)
+
+        childrenResult.onSuccess { children ->
+            map[libKey] = children
+            children
+                .filter { dependencyFilter.matches(it.toString()) }
+                .forEach { processDependency(it) }
+
+        }.rethrowCancellationException()
+            .onFailure {
+                logger.error("[ERROR] $libKey : ${it.message}", it)
+                throw it
             }
-            logger.info("----------------- CHILDREN END------------------------")
-        }.onFailure {
-            println("ERRRRROOOOOOR $libKey")
-            it.printStackTrace()
-        }
     }
 }
-
 
 internal data class GraphUseCaseParams(
     val configurations: Set<Configuration>,
     val startupFlags: StartupFlags,
-    val filter: DependencyFilter?,
+    val limit: Int
 ) : UseCaseParams

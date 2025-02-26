@@ -1,5 +1,6 @@
-package io.github.eugene239.gradle.plugin.dependency.internal.service
+package io.github.eugene239.gradle.plugin.dependency.internal.service.serializer
 
+import io.github.eugene239.gradle.plugin.dependency.internal.service.Properties
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor

@@ -77,11 +77,12 @@ internal class PomXMLParserImpl(
                             return null
                         }
                     }
+
                     else -> {}
                 }
             }
 
-        if (groupId == null || artifactId == null || (filter!= null && !filter.matches("$groupId:$artifactId:$version"))) {
+        if (groupId == null || artifactId == null || (filter != null && !filter.matches("$groupId:$artifactId:$version"))) {
             return null
         }
         val vrs = version
@@ -92,9 +93,8 @@ internal class PomXMLParserImpl(
             if (vrs.startsWith("\${")) {
                 version = getVersionFromProperties(pom, vrs)
             } else if (vrs.startsWith("[")) {
-                version = vrs.split(",").first().removePrefix("[").also {
-                    logger.info("Took version from list: $it ($vrs)")
-                }
+                version = vrs.split(",").first().removePrefix("[").removeSuffix("]").removeSuffix("]")
+                    .also { logger.info("Took version from list: $it ($vrs)") }
             } else if (UNSPECIFIED == vrs) {
                 version = getUnspecifiedVersion(pom).also {
                     logger.info("Unspecified version -> $it")

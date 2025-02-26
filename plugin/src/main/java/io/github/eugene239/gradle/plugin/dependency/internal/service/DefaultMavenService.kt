@@ -2,20 +2,21 @@ package io.github.eugene239.gradle.plugin.dependency.internal.service
 
 import io.github.eugene239.gradle.plugin.dependency.internal.LibIdentifier
 import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
+import io.github.eugene239.gradle.plugin.dependency.internal.exception.PomException
+import io.github.eugene239.gradle.plugin.dependency.internal.exception.WIPException
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpRequestTimeoutException
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.request.head
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.xml.xml
-import nl.adaptivity.xmlutil.ExperimentalXmlUtilApi
-import nl.adaptivity.xmlutil.serialization.DefaultFormatCache
-import nl.adaptivity.xmlutil.serialization.DefaultXmlSerializationPolicy
-import nl.adaptivity.xmlutil.serialization.XML
-import nl.adaptivity.xmlutil.serialization.XmlConfig
 import org.gradle.api.logging.Logger
 import java.net.URL
 
@@ -23,17 +24,25 @@ internal class DefaultMavenService(
     private val logger: Logger
 ) : MavenService {
 
-    @OptIn(ExperimentalXmlUtilApi::class)
     private val client: HttpClient = HttpClient(CIO) {
+        install(HttpTimeout) {
+            requestTimeoutMillis = 20_000
+            connectTimeoutMillis = 10_000
+            socketTimeoutMillis = 10_000
+        }
+//        install(HttpRequestRetry) {
+//            retryOnExceptionIf(
+//                maxRetries = 2
+//            ) { request, exception ->
+//                logger.warn("${request.url} retry on $exception")
+//                exception is HttpRequestTimeoutException || exception is IOException
+//            }
+//            delayMillis { retry: Int -> retry * 1000L }
+//        }
         install(ContentNegotiation) {
             xml(
-                contentType = ContentType.Text.Xml,
-                format = XML {
-                    policy = DefaultXmlSerializationPolicy(formatCache = DefaultFormatCache()) {
-                        unknownChildHandler = XmlConfig.IGNORING_UNKNOWN_CHILD_HANDLER
-                    }
-                    autoPolymorphic= true
-                },
+                contentType = ContentType.Any,
+                format = XmlFormat.format
             )
         }
     }
@@ -57,11 +66,18 @@ internal class DefaultMavenService(
 
     override suspend fun getPom(libKey: LibKey, repository: Repository): Pom {
         val urlPath = "${libKey.group.replace('.', '/')}/${libKey.module}/${libKey.version}/${libKey.module}-${libKey.version}.pom"
-        return client.get(URL("${repository.url.removeSuffix("/")}/$urlPath".also { logger.info("pomUrl: $it") })) {
+        val url = "${repository.url.removeSuffix("/")}/$urlPath"
+            .also { logger.info("pomUrl: $it") }
+        val response = client.get(URL(url)) {
             repository.authorization?.let {
                 headers.appendAll(it.toStringValues())
             }
-        }.body<Pom>()
+        }
+        when {
+            response.status.isSuccess() -> return response.body()
+            HttpStatusCode.NotFound == response.status -> throw PomException.PomNotFoundException(url)
+            else -> throw WIPException("Unhandled error for pomCache, check $url")
+        }
     }
 
     override suspend fun getSize(libKey: LibKey, repository: Repository, packaging: String): Long {

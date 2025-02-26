@@ -2,9 +2,8 @@ package io.github.eugene239.gradle.plugin.dependency.task
 
 import io.github.eugene239.gradle.plugin.dependency.internal.OUTPUT_PATH
 import io.github.eugene239.gradle.plugin.dependency.internal.StartupFlags
-import io.github.eugene239.gradle.plugin.dependency.internal.cache.version.VersionCache
 import io.github.eugene239.gradle.plugin.dependency.internal.filter.DependencyFilter
-import io.github.eugene239.gradle.plugin.dependency.internal.provider.RepositoryProvider
+import io.github.eugene239.gradle.plugin.dependency.internal.provider.DefaultRepositoryProvider
 import io.github.eugene239.gradle.plugin.dependency.internal.usecase.GraphUseCase
 import io.github.eugene239.gradle.plugin.dependency.internal.usecase.GraphUseCaseParams
 import kotlinx.coroutines.Dispatchers
@@ -24,17 +23,25 @@ abstract class DependencyGraphTask : BaseTask() {
     @Option(option = "configuration", description = "Configurations to launch")
     var configuration: String = ""
 
+    private val defaultLimit = 100
+
+    @Input
+    @Option(option = "dependency-limit", description = "Max dependency processing at one time")
+    var limit: String = "$defaultLimit"
+
+
     private val rootDir = File("${project.layout.buildDirectory.asFile.get()}${File.separator}$OUTPUT_PATH")
     private val logger = project.logger
-
+    private val dependencyFilter = DependencyFilter(project = project)
     private val useCase = GraphUseCase(
         rootDir = rootDir,
         logger = logger,
-        repositoryProvider = RepositoryProvider(
+        dependencyFilter = dependencyFilter,
+        repositoryProvider = DefaultRepositoryProvider(
             project = project,
             logger = logger
         ),
-        ioDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher() // todo remove
+        ioDispatcher = Dispatchers.IO
     )
 
     override suspend fun exec() {
@@ -47,10 +54,10 @@ abstract class DependencyGraphTask : BaseTask() {
         } else {
             setOf(project.configurations.findByName(configuration))
         }
-        val depFilter: DependencyFilter? = if (filter.isBlank().not()) {
-            DependencyFilter(project, Regex(filter))
+        if (filter.isBlank()) {
+            dependencyFilter.setRegex(null)
         } else {
-            null
+            dependencyFilter.setRegex(Regex(filter))
         }
 
         val result = useCase.execute(
@@ -59,7 +66,7 @@ abstract class DependencyGraphTask : BaseTask() {
                 startupFlags = StartupFlags(
                     fetchVersions = false
                 ),
-                filter = depFilter
+                limit = limit.toIntOrNull() ?: defaultLimit
             )
         )
         logger.lifecycle("Site in file://${result.path}")

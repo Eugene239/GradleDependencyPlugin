@@ -1,29 +1,32 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.service
 
 import kotlinx.serialization.decodeFromString
-import nl.adaptivity.xmlutil.ExperimentalXmlUtilApi
-import nl.adaptivity.xmlutil.serialization.DefaultFormatCache
-import nl.adaptivity.xmlutil.serialization.DefaultXmlSerializationPolicy
-import nl.adaptivity.xmlutil.serialization.XML
-import nl.adaptivity.xmlutil.serialization.XmlConfig
 import org.junit.Assert
 import org.junit.Test
 
-@OptIn(ExperimentalXmlUtilApi::class)
 internal class MavenPomPropertiesXmlSerializerTest {
 
-    private val xml = XML {
-        policy = DefaultXmlSerializationPolicy(formatCache = DefaultFormatCache()) {
-            unknownChildHandler = XmlConfig.IGNORING_UNKNOWN_CHILD_HANDLER
-        }
-        autoPolymorphic = true
-    }
+    private val xml = XmlFormat.format
 
     @Test
     fun `parse properties with custom serializer`() {
+        // WHEN
         val pom: Pom = xml.decodeFromString(xmlText)
+        // THEN
         Assert.assertNotNull(pom.properties?.entries)
         Assert.assertEquals(pom.properties?.entries?.size, 7)
+    }
+
+    @Test
+    fun `parse pom with and without namespace`() {
+        // WHEN
+        xml.decodeFromString<Pom>(xmlText).also {
+            println(it)
+        }
+        xml.decodeFromString<Pom>(xmlWithoutNamespace).also {
+            println(it)
+        }
+
     }
 
     private val xmlText = """
@@ -38,6 +41,15 @@ internal class MavenPomPropertiesXmlSerializerTest {
             <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
             <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
           </properties>
+        </project>
+    """.trimIndent()
+
+    private val xmlWithoutNamespace = """
+        <project>
+        <modelVersion>4.0.0</modelVersion>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
+        <version>1.2.12</version>
         </project>
     """.trimIndent()
 }

@@ -30,10 +30,12 @@ internal class GraphUseCaseOld(
     private val versionCache = VersionCache(project)
     private val rootDir =
         File("${project.layout.buildDirectory.asFile.get()}${File.separator}$OUTPUT_PATH")
-    private val depFilter: DependencyFilter? = if (filter.isBlank().not()) {
-        DependencyFilter(project, Regex(filter))
-    } else {
-        null
+    private val depFilter: DependencyFilter = DependencyFilter(project).also {
+        if (filter.isBlank().not()) {
+            it.setRegex(Regex(filter))
+        } else {
+            it.setRegex(null)
+        }
     }
     private val logger = project.logger
     private val dependencyCache = DependencyCache(
@@ -93,7 +95,7 @@ internal class GraphUseCaseOld(
         logger.lifecycle("####### PROCESSING ${configuration.name}")
         val incoming = configuration.incoming.resolutionResult.root.dependencies
             .filterIsInstance<ResolvedDependencyResult>()
-            .filter { depFilter?.matches(it) != false }
+            .filter { depFilter.matches(it) }
             .toSet()
 
         logger.lifecycle("incoming size: ${incoming.size}")

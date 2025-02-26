@@ -6,6 +6,10 @@ freemarker = "2.3.33"
 build-config = "5.4.0"
 gradle-publish = "1.3.1"
 ktor = "3.1.0"
+# Test
+junit = "4.13.2"
+mockk = "1.13.16"
+
 
 [libraries]
 freemarker = { group = "org.freemarker", name = "freemarker", version.ref = "freemarker" }
@@ -15,6 +19,11 @@ ktor-client = { group = "io.ktor", name = "ktor-client-core", version.ref = "kto
 ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
 ktor-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-serialization-xml = { group = "io.ktor", name = "ktor-serialization-kotlinx-xml", version.ref = "ktor" }
+# Test
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

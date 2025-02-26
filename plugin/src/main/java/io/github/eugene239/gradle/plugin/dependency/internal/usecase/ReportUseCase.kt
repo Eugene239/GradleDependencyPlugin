@@ -16,7 +16,7 @@ import org.gradle.api.Project
 import java.io.File
 
 internal class ReportUseCase(
-    private val versionCache: VersionCache
+    private val versionCache: VersionCache,
 ) : UseCase<ReportUseCaseParams, File> {
 
 
@@ -27,16 +27,18 @@ internal class ReportUseCase(
             outputDirectory = File(project.layout.buildDirectory.asFile.get(), OUTPUT_PATH)
         )
 
-        val depFilter: DependencyFilter? = if (filter.isBlank().not()) {
-            DependencyFilter(project, Regex(filter))
-        } else {
-            null
+        val depFilter: DependencyFilter = DependencyFilter(project).also {
+            if (filter.isBlank().not()) {
+                it.setRegex(Regex(filter))
+            } else {
+                it.setRegex(null)
+            }
         }
 
         project.configurations.forEach { conf ->
             conf.dependencies
                 .asSequence()
-                .filter { depFilter?.matches(it) ?: true }
+                .filter { depFilter.matches(it) }
                 .filter {
                     it.group.isNullOrBlank().not()
                             && it.version.isNullOrBlank().not()
