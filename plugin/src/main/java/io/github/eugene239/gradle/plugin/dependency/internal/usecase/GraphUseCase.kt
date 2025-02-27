@@ -1,5 +1,6 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.usecase
 
+import io.github.eugene239.gradle.plugin.dependency.internal.LibIdentifier
 import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.StartupFlags
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.children.ChildrenCache
@@ -7,9 +8,13 @@ import io.github.eugene239.gradle.plugin.dependency.internal.cache.pom.PomCache
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.repository.RepositoryCache
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.rethrowCancellationException
 import io.github.eugene239.gradle.plugin.dependency.internal.filter.DependencyFilter
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.DefaultGraphOutput
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.GraphOutput
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.FlatDependencies
 import io.github.eugene239.gradle.plugin.dependency.internal.provider.DefaultRepositoryProvider
 import io.github.eugene239.gradle.plugin.dependency.internal.service.DefaultMavenService
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenService
+import io.github.eugene239.gradle.plugin.dependency.internal.toIdentifier
 import io.github.eugene239.gradle.plugin.dependency.internal.toLibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.ui.DefaultUiSaver
 import io.github.eugene239.gradle.plugin.dependency.internal.ui.UiSaver
@@ -18,8 +23,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
@@ -33,9 +36,15 @@ internal class GraphUseCase(
     private val dependencyFilter: DependencyFilter,
     private val repositoryProvider: DefaultRepositoryProvider,
     private val mavenService: MavenService = DefaultMavenService(
+        repositoryProvider = repositoryProvider,
         logger = logger
     ),
+
     private val uiSaver: UiSaver = DefaultUiSaver(logger = logger),
+    private val output: GraphOutput = DefaultGraphOutput(
+        rootDir = rootDir,
+        uiSaver = uiSaver
+    ),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val repositoryCache: RepositoryCache = RepositoryCache(
         repositoryProvider = repositoryProvider,
@@ -58,8 +67,6 @@ internal class GraphUseCase(
         logger.info("Start execution with params: $params")
         rootDir.mkdirs()
 
-        val semaphore = Semaphore(params.limit)
-
         val dependencies = params.configurations
             .map { configuration ->
                 configuration.incoming.resolutionResult.root.dependencies
@@ -72,6 +79,8 @@ internal class GraphUseCase(
             .flatten()
             .toSet()
 
+        val identifiers = dependencies.map { it.toIdentifier() }.toSet()
+
         logger.lifecycle("Getting info about ${dependencies.size} dependencies")
         if (logger.isInfoEnabled) {
             dependencies.forEach {
@@ -81,25 +90,31 @@ internal class GraphUseCase(
 
         withContext(ioDispatcher) {
             dependencies.map {
-                async { semaphore.withPermit { processDependency(libKey = it) } }
+                async { processDependency(libKey = it, identifiers) }
             }.awaitAll()
         }
 
-        println("%%%%%%%%%%%%%% ERRORS %%%%%%%%%%%%%%%%")
         val errors = childrenCache.getErrors()
         errors.forEach { entry ->
-            println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
             println(entry.key)
             entry.value.exceptionOrNull()?.printStackTrace()
         }
 
-        val result = uiSaver.save(rootDir)
-        return result
+        return output.save(
+            flatDependencies = FlatDependencies(
+                map
+            )
+        )
     }
 
-    private suspend fun processDependency(libKey: LibKey): Unit = coroutineScope {
-        logger.info("processDependency: $libKey")
-        if (map[libKey] != null) return@coroutineScope
+    private suspend fun processDependency(libKey: LibKey, identifiers: Set<LibIdentifier>): Unit = coroutineScope {
+        logger.debug("processDependency: $libKey")
+        if (map[libKey] != null
+            || identifiers.contains(libKey.toIdentifier()).not()
+            || libKey.version.isBlank()
+        ) {
+            return@coroutineScope
+        }
 
         val childrenResult = childrenCache.get(libKey)
 
@@ -107,8 +122,10 @@ internal class GraphUseCase(
             map[libKey] = children
             children
                 .filter { dependencyFilter.matches(it.toString()) }
-                .forEach { processDependency(it) }
-
+                .forEach {
+                    processDependency(it, identifiers)
+                }
+            logger.lifecycle("Processed: $libKey")
         }.rethrowCancellationException()
             .onFailure {
                 logger.error("[ERROR] $libKey : ${it.message}", it)
@@ -120,5 +137,4 @@ internal class GraphUseCase(
 internal data class GraphUseCaseParams(
     val configurations: Set<Configuration>,
     val startupFlags: StartupFlags,
-    val limit: Int
 ) : UseCaseParams

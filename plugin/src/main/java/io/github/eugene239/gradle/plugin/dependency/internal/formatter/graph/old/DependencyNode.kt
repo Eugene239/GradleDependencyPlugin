@@ -1,4 +1,4 @@
-package io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph
+package io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph.old
 
 import kotlinx.serialization.Serializable
 import java.util.Collections

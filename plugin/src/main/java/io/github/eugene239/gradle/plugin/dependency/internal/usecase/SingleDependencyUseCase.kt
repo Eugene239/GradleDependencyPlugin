@@ -16,6 +16,7 @@ internal class SingleDependencyUseCase(
     private val repositoryProvider: DefaultRepositoryProvider,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val mavenService: MavenService = DefaultMavenService(
+        repositoryProvider = repositoryProvider,
         logger = logger
     ),
     private val repositoryCache: RepositoryCache = RepositoryCache(
@@ -40,18 +41,13 @@ internal class SingleDependencyUseCase(
         logger.info("processDependency: $libKey")
         val children = childrenCache.get(libKey)
         children.onSuccess {
-            logger.info("----------------- CHILDREN ------------------------")
             logger.info("$libKey")
             it.forEach { child ->
                 logger.info("[$libKey] -- $child")
                 processDependency(child)
             }
-            logger.info("----------------- CHILDREN END------------------------")
-            logger.info("")
         }.onFailure {
-            println("ERRRRROOOOOOR $libKey")
-            it.printStackTrace()
-            throw Exception("Dependency processing error")
+            throw Exception("Dependency processing error", it)
         }
     }
 }

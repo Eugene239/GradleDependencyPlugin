@@ -8,26 +8,29 @@ import io.github.eugene239.gradle.plugin.dependency.internal.provider.Repository
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenService
 import io.github.eugene239.gradle.plugin.dependency.internal.service.Repository
 import io.ktor.util.collections.ConcurrentMap
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.gradle.internal.cc.base.logger
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
+// TODO Add metadata checking with different versions
 internal class RepositoryCache(
     private val repositoryProvider: RepositoryProvider,
     private val mavenService: MavenService,
     private val ioDispatcher: CoroutineDispatcher
 ) : Cache<LibIdentifier, Result<Repository>> {
 
-    private val groupCache = ConcurrentMap<String, Repository>()
     private val cache = ConcurrentMap<LibIdentifier, Result<Repository>>()
+    private val counter = ConcurrentHashMap<Repository, AtomicInteger>()
 
     override suspend fun get(key: LibIdentifier): Result<Repository> {
         cache[key]?.let {
-            logger.info("RepositoryCache found: $key")
+            logger.debug("RepositoryCache found: $key")
             return it
         }
-
-        logger.info("RepositoryCache missed $key")
+        logger.debug("RepositoryCache missed: $key")
         cache[key] = kotlin.runCatching { findRepository(key) }.rethrowCancellationException()
         return cache[key]!!
 
@@ -38,11 +41,20 @@ internal class RepositoryCache(
         val repositories = repositoryProvider.getRepositories()
         return withContext(ioDispatcher) {
             repositories
-                .apply { if (groupCache[key.group] != null) this.sortedByDescending { groupCache[key.group] != null } }
+                .sortedByDescending { counter[it]?.get() ?: 0 }
                 .forEach { repository ->
-                    if (mavenService.isMetadataExists(key, repository).getOrNull() == true) {
-                        groupCache[key.group] = repository
-                        return@withContext repository
+                    val result = mavenService.isMetadataExists(key, repository)
+                    result.onSuccess {
+                        if (it) {
+                            counter.putIfAbsent(repository, AtomicInteger(0))
+                            counter[repository]?.incrementAndGet()
+                            logger.debug("found Repository: $key -> $repository counter: ${counter[repository]?.get()}")
+                            return@withContext repository
+                        }
+                    }.onFailure {
+                        if (it !is CancellationException) {
+                            logger.warn("failed to get metadata for $key in $repository", it)
+                        }
                     }
                 }
             throw RepositoryException.RepositoryNotFoundException(key)

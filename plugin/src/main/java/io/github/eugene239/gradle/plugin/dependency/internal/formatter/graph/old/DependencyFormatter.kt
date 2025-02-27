@@ -1,15 +1,14 @@
-package io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph
+package io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph.old
 
 import io.github.eugene239.gradle.plugin.dependency.internal.StartupFlags
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.PluginConfiguration
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.ProjectConfiguration
 import io.github.eugene239.plugin.BuildConfig
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.gradle.api.artifacts.Configuration
 import java.io.File
 
-
-@OptIn(ExperimentalSerializationApi::class)
+@Deprecated("Use GraphOutput")
 internal class DependencyFormatter(
     private val startupFlags: StartupFlags
 ) : Formatter {
@@ -30,12 +29,7 @@ internal class DependencyFormatter(
     override fun saveConfigurations(outputDir: File, configurations: List<Configuration>) {
         val pluginConfiguration = PluginConfiguration(
             version = BuildConfig.PLUGIN_VERSION,
-            configurations = configurations.map {
-                ProjectConfiguration(
-                    name = it.name,
-                    description = it.description
-                )
-            },
+            configurations = configurations.toSet(),
             startupFlags = startupFlags
         )
         val json = prettyEncoder.encodeToString(pluginConfiguration)

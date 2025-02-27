@@ -10,11 +10,9 @@ internal object XmlFormat {
 
     @OptIn(ExperimentalXmlUtilApi::class)
     val format = XML {
-//        repairNamespaces = true
         policy = DefaultXmlSerializationPolicy(formatCache = defaultSharedFormatCache()) {
             unknownChildHandler = XmlConfig.IGNORING_UNKNOWN_CHILD_HANDLER
         }
         isCachingEnabled = false
-  //      autoPolymorphic = true
     }
 }

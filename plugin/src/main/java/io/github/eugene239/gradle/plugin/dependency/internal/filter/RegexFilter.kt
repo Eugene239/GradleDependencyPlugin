@@ -1,6 +1,6 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.filter
 
-import io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph.DependencyNode
+import io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph.old.DependencyNode
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
 

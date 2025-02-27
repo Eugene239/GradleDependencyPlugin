@@ -2,14 +2,11 @@ package io.github.eugene239.gradle.plugin.dependency.internal.usecase
 
 import io.github.eugene239.gradle.plugin.dependency.internal.OUTPUT_PATH
 import io.github.eugene239.gradle.plugin.dependency.internal.StartupFlags
-import io.github.eugene239.gradle.plugin.dependency.internal.cache.dependency.DependencyCache
-import io.github.eugene239.gradle.plugin.dependency.internal.cache.pom.PomCache
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.version.VersionCache
 import io.github.eugene239.gradle.plugin.dependency.internal.filter.DependencyFilter
-import io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph.FlatFormatter
-import io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph.DependencyFormatter
-import io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph.Formatter
-import io.github.eugene239.gradle.plugin.dependency.internal.pom.PomXMLParserImpl
+import io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph.old.FlatFormatter
+import io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph.old.DependencyFormatter
+import io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph.old.Formatter
 import io.github.eugene239.gradle.plugin.dependency.internal.toLibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.ui.DefaultUiSaver
 import io.github.eugene239.gradle.plugin.dependency.internal.ui.UiSaver
@@ -38,18 +35,18 @@ internal class GraphUseCaseOld(
         }
     }
     private val logger = project.logger
-    private val dependencyCache = DependencyCache(
-        dependencyFilter = depFilter,
-        logger = logger,
+//    private val dependencyCache = DependencyCache(
+//        dependencyFilter = depFilter,
+//        logger = logger,
 //        pomCache = PomCache(
 //            project = project,
 //            versionCache = versionCache,
 //        ),
-        xmlParser = PomXMLParserImpl(
-            logger = project.logger,
-            filter = depFilter
-        )
-    )
+//        xmlParser = PomXMLParserImpl(
+//            logger = project.logger,
+//            filter = depFilter
+//        )
+ //   )
     private val formatter = FlatFormatter(
         logger = project.logger
     )
@@ -70,20 +67,20 @@ internal class GraphUseCaseOld(
             }.awaitAll()
         }
 
-        val cached = dependencyCache.cachedValues()
-        formatter.format(rootDir, cached)
-        val failed = dependencyCache.failedValues()
+    //    val cached = dependencyCache.cachedValues()
+   //     formatter.format(rootDir, cached)
+   //     val failed = dependencyCache.failedValues()
         formatter.saveConfigurations(rootDir, params.configurations)
         val result = uiSaver.save(rootDir)
 
-        logger.warn("FAILED DEPENDENCIES: ${failed.size}")
-        failed.forEach {
-            logger.warn("[PARENT] ${it.parent} ----> [DEPENDENCY] ${it.lib}")
-            if (logger.isInfoEnabled) {
-                it.error.printStackTrace()
-
-            }
-        }
+//        logger.warn("FAILED DEPENDENCIES: ${failed.size}")
+//        failed.forEach {
+//            logger.warn("[PARENT] ${it.parent} ----> [DEPENDENCY] ${it.lib}")
+//            if (logger.isInfoEnabled) {
+//                it.error.printStackTrace()
+//
+//            }
+//        }
         depFormatter.saveVersions(rootDir, versionCache.getLatestVersions())
         return result
     }
@@ -99,7 +96,7 @@ internal class GraphUseCaseOld(
             .toSet()
 
         logger.lifecycle("incoming size: ${incoming.size}")
-        dependencyCache.fill(incoming)
+      //  dependencyCache.fill(incoming)
 
         val outputDir = File(rootDir, configuration.name)
         outputDir.mkdirs()

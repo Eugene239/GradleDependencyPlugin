@@ -1,20 +1,20 @@
-package io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph
+package io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph.old
 
 import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.StartupFlags
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.PluginConfiguration
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.ProjectConfiguration
 import io.github.eugene239.plugin.BuildConfig
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
 import org.gradle.api.artifacts.Configuration
 import org.slf4j.Logger
 import java.io.File
 
+@Deprecated("Use GraphOutput")
 internal class FlatFormatter(
     private val logger: Logger
 ) {
-    @OptIn(ExperimentalSerializationApi::class)
     private val prettyEncoder = Json {
         prettyPrint = true
         explicitNulls = false
@@ -55,12 +55,7 @@ internal class FlatFormatter(
     ) {
         val pluginConfiguration = PluginConfiguration(
             version = BuildConfig.PLUGIN_VERSION,
-            configurations = configurations.map {
-                ProjectConfiguration(
-                    name = it.name,
-                    description = it.description
-                )
-            },
+            configurations = configurations.toSet(),
             startupFlags = startupFlags
         )
         val json = prettyEncoder.encodeToString(pluginConfiguration)

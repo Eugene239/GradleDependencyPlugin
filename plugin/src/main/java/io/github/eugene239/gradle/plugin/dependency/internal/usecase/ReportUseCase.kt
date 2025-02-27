@@ -5,10 +5,10 @@ import io.github.eugene239.gradle.plugin.dependency.internal.UNSPECIFIED_VERSION
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.version.VersionCache
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.version.VersionKey
 import io.github.eugene239.gradle.plugin.dependency.internal.filter.DependencyFilter
-import io.github.eugene239.gradle.plugin.dependency.internal.formatter.report.DependencyStatus
 import io.github.eugene239.gradle.plugin.dependency.internal.formatter.report.MarkdownReportFormatter
-import io.github.eugene239.gradle.plugin.dependency.internal.formatter.report.OutdatedDependency
 import io.github.eugene239.gradle.plugin.dependency.internal.formatter.report.ReportFormatter
+import io.github.eugene239.gradle.plugin.dependency.internal.output.report.DependencyStatus
+import io.github.eugene239.gradle.plugin.dependency.internal.output.report.OutdatedDependency
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope

@@ -20,7 +20,8 @@ abstract class SingleDependencyTask : BaseTask() {
         logger = logger,
         repositoryProvider = DefaultRepositoryProvider(
             project = project,
-            logger = logger
+            logger = logger,
+            limit = 1
         )
     )
 

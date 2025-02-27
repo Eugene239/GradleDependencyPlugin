@@ -1,4 +1,4 @@
-package io.github.eugene239.gradle.plugin.dependency.internal.formatter.report
+package io.github.eugene239.gradle.plugin.dependency.internal.output.report
 
 internal data class OutdatedDependency(
     val name: String,

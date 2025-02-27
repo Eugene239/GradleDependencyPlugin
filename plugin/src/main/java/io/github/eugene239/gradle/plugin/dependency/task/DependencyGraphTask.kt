@@ -7,11 +7,9 @@ import io.github.eugene239.gradle.plugin.dependency.internal.provider.DefaultRep
 import io.github.eugene239.gradle.plugin.dependency.internal.usecase.GraphUseCase
 import io.github.eugene239.gradle.plugin.dependency.internal.usecase.GraphUseCaseParams
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.asCoroutineDispatcher
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.options.Option
 import java.io.File
-import java.util.concurrent.Executors
 
 abstract class DependencyGraphTask : BaseTask() {
 
@@ -23,10 +21,10 @@ abstract class DependencyGraphTask : BaseTask() {
     @Option(option = "configuration", description = "Configurations to launch")
     var configuration: String = ""
 
-    private val defaultLimit = 100
+    private val defaultLimit = 20
 
     @Input
-    @Option(option = "dependency-limit", description = "Max dependency processing at one time")
+    @Option(option = "repository-connection-limit", description = "Max api calls to repository at one time")
     var limit: String = "$defaultLimit"
 
 
@@ -39,7 +37,8 @@ abstract class DependencyGraphTask : BaseTask() {
         dependencyFilter = dependencyFilter,
         repositoryProvider = DefaultRepositoryProvider(
             project = project,
-            logger = logger
+            logger = logger,
+            limit = limit.toIntOrNull() ?: defaultLimit
         ),
         ioDispatcher = Dispatchers.IO
     )
@@ -66,7 +65,6 @@ abstract class DependencyGraphTask : BaseTask() {
                 startupFlags = StartupFlags(
                     fetchVersions = false
                 ),
-                limit = limit.toIntOrNull() ?: defaultLimit
             )
         )
         logger.lifecycle("Site in file://${result.path}")

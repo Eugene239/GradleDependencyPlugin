@@ -2,6 +2,7 @@ package io.github.eugene239.gradle.plugin.dependency.internal.formatter.report
 
 import freemarker.template.Configuration
 import freemarker.template.TemplateExceptionHandler
+import io.github.eugene239.gradle.plugin.dependency.internal.output.report.OutdatedDependency
 import io.github.eugene239.plugin.BuildConfig
 import java.io.File
 

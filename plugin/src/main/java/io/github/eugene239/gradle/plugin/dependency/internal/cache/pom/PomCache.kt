@@ -20,11 +20,11 @@ internal class PomCache(
 
     override suspend fun get(key: LibKey): Result<Pom> {
         cache[key]?.let {
-            logger.info("PomCache found: $key")
+            logger.debug("PomCache found: $key")
             return it
         }
 
-        logger.info("PomCache missed $key")
+        logger.debug("PomCache missed $key")
         val repository = repositoryCache.get(key.toIdentifier())
 
         repository
