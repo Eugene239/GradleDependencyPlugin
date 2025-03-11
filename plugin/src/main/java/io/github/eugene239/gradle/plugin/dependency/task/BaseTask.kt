@@ -8,6 +8,10 @@ import java.io.File
 
 abstract class BaseTask : DefaultTask() {
 
+    companion object {
+        const val DEFAULT_LIMIT = 20
+    }
+
     @TaskAction
     fun init() {
         runCatching {

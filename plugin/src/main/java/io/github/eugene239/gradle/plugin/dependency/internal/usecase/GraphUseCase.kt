@@ -1,112 +1,160 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.usecase
 
-import io.github.eugene239.gradle.plugin.dependency.internal.OUTPUT_PATH
+import io.github.eugene239.gradle.plugin.dependency.internal.LibIdentifier
+import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.StartupFlags
-import io.github.eugene239.gradle.plugin.dependency.internal.cache.dependency.DependencyCache
+import io.github.eugene239.gradle.plugin.dependency.internal.cache.children.ChildrenCache
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.pom.PomCache
-import io.github.eugene239.gradle.plugin.dependency.internal.cache.version.VersionCache
+import io.github.eugene239.gradle.plugin.dependency.internal.cache.repository.RepositoryCache
+import io.github.eugene239.gradle.plugin.dependency.internal.cache.rethrowCancellationException
+import io.github.eugene239.gradle.plugin.dependency.internal.exception.RepositoryException
 import io.github.eugene239.gradle.plugin.dependency.internal.filter.DependencyFilter
-import io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph.FlatFormatter
-import io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph.DependencyFormatter
-import io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph.Formatter
-import io.github.eugene239.gradle.plugin.dependency.internal.pom.PomXMLParserImpl
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.DefaultGraphOutput
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.GraphOutput
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.FlatDependencies
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.PluginConfiguration
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.ProjectConfiguration
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.TopDependencies
+import io.github.eugene239.gradle.plugin.dependency.internal.provider.DefaultRepositoryProvider
+import io.github.eugene239.gradle.plugin.dependency.internal.service.DefaultMavenService
+import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenService
+import io.github.eugene239.gradle.plugin.dependency.internal.toIdentifier
 import io.github.eugene239.gradle.plugin.dependency.internal.toLibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.ui.DefaultUiSaver
 import io.github.eugene239.gradle.plugin.dependency.internal.ui.UiSaver
+import io.github.eugene239.plugin.BuildConfig
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import org.gradle.api.Project
+import kotlinx.coroutines.withContext
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
+import org.gradle.api.logging.Logger
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 
 internal class GraphUseCase(
-    project: Project,
-    filter: String
+    private val rootDir: File,
+    private val logger: Logger,
+    private val dependencyFilter: DependencyFilter,
+    private val repositoryProvider: DefaultRepositoryProvider,
+    private val mavenService: MavenService = DefaultMavenService(
+        repositoryProvider = repositoryProvider,
+        logger = logger
+    ),
+
+    private val uiSaver: UiSaver = DefaultUiSaver(logger = logger),
+    private val output: GraphOutput = DefaultGraphOutput(
+        rootDir = rootDir,
+        uiSaver = uiSaver
+    ),
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val repositoryCache: RepositoryCache = RepositoryCache(
+        repositoryProvider = repositoryProvider,
+        mavenService = mavenService,
+        ioDispatcher = ioDispatcher
+    ),
+    private val pomCache: PomCache = PomCache(
+        mavenService = mavenService,
+        repositoryCache = repositoryCache,
+    ),
+    private val childrenCache: ChildrenCache = ChildrenCache(
+        pomCache = pomCache
+    )
 ) : UseCase<GraphUseCaseParams, File> {
 
-    private val versionCache = VersionCache(project)
-    private val rootDir =
-        File("${project.layout.buildDirectory.asFile.get()}${File.separator}$OUTPUT_PATH")
-    private val depFilter: DependencyFilter? = if (filter.isBlank().not()) {
-        DependencyFilter(project, Regex(filter))
-    } else {
-        null
-    }
-    private val logger = project.logger
-    private val dependencyCache = DependencyCache(
-        dependencyFilter = depFilter,
-        logger = logger,
-        pomCache = PomCache(
-            project = project,
-            versionCache = versionCache,
-        ),
-        xmlParser = PomXMLParserImpl(
-            logger = project.logger,
-            filter = depFilter
-        )
-    )
-    private val formatter = FlatFormatter(
-        logger = project.logger
-    )
-    private val uiSaver: UiSaver = DefaultUiSaver(
-        logger = logger
-    )
-    private val depFormatter: Formatter = DependencyFormatter(
-        startupFlags = StartupFlags(fetchVersions = false)
-    )
+    private val map = ConcurrentHashMap<LibKey, List<LibKey>>()
+
 
     override suspend fun execute(params: GraphUseCaseParams): File {
+        logger.info("Start execution with params: $params")
         rootDir.mkdirs()
-        coroutineScope {
-            params.configurations.map { configuration ->
-                async {
-                    processConfiguration(rootDir, configuration)
-                }
+
+        val topDependencies = params.configurations.associateWith { configuration ->
+            configuration.incoming.resolutionResult.root.dependencies
+                .asSequence()
+                .filterIsInstance<ResolvedDependencyResult>()
+                .filter { dependencyFilter.isSubmodule(it).not() && dependencyFilter.matches(it) }
+                .toSet()
+                .map { it.toLibKey() }
+                .toSet()
+        }
+
+        val dependencies = topDependencies.map { entry -> entry.value }
+            .flatten()
+            .toSet()
+
+        val identifiers = dependencies.map { it.toIdentifier() }.toSet()
+
+        logger.lifecycle("Getting info about ${dependencies.size} dependencies")
+        if (logger.isInfoEnabled) {
+            dependencies.forEach {
+                logger.info("- $it")
+            }
+        }
+
+        withContext(ioDispatcher) {
+            dependencies.map {
+                async { processDependency(libKey = it, identifiers) }
             }.awaitAll()
         }
 
-        val cached = dependencyCache.cachedValues()
-        formatter.format(rootDir, cached)
-        val failed = dependencyCache.failedValues()
-        formatter.saveConfigurations(rootDir, params.configurations)
-        val result = uiSaver.save(rootDir)
+        return output.save(
+            pluginConfiguration = PluginConfiguration(
+                configurations = params.configurations.map {
+                    ProjectConfiguration(
+                        name = it.name,
+                        description = it.description
+                    )
+                }.toSet(),
+                version = BuildConfig.PLUGIN_VERSION,
+                startupFlags = StartupFlags(
+                    fetchVersions = false
+                )
+            ),
+            topDependencies = TopDependencies(topDependencies),
+            flatDependencies = FlatDependencies(map)
+        )
+    }
 
-        logger.warn("FAILED DEPENDENCIES: ${failed.size}")
-        failed.forEach {
-            logger.warn("[PARENT] ${it.parent} ----> [DEPENDENCY] ${it.lib}")
-            if (logger.isInfoEnabled) {
-                it.error.printStackTrace()
-
-            }
+    private suspend fun processDependency(libKey: LibKey, identifiers: Set<LibIdentifier>): Unit = coroutineScope {
+        logger.debug("processDependency: $libKey")
+        if (map[libKey] != null
+            || identifiers.contains(libKey.toIdentifier()).not()
+            || libKey.version.isBlank()
+        ) {
+            return@coroutineScope
         }
-        depFormatter.saveVersions(rootDir, versionCache.getLatestVersions())
-        return result
+
+        val childrenResult = childrenCache.get(libKey)
+
+        childrenResult.onSuccess { children ->
+            map[libKey] = children
+            children
+                .filter { dependencyFilter.matches(it.toString()) }
+                .forEach {
+                    processDependency(it, identifiers)
+                }
+            logger.lifecycle("Processed: $libKey")
+        }.rethrowCancellationException()
+            .onFailure {
+                when (it) {
+                    is RepositoryException.RepositoryWithVersionInMetadataNotFound -> {
+                        logger.warn("[WARN] ${it.message}")
+                    }
+
+                    else -> {
+                        logger.error("[ERROR] $libKey : ${it.message}", it)
+                        throw it
+                    }
+                }
+            }
     }
-
-    private suspend fun processConfiguration(
-        rootDir: File,
-        configuration: Configuration
-    ) {
-        logger.lifecycle("####### PROCESSING ${configuration.name}")
-        val incoming = configuration.incoming.resolutionResult.root.dependencies
-            .filterIsInstance<ResolvedDependencyResult>()
-            .filter { depFilter?.matches(it) != false }
-            .toSet()
-
-        logger.lifecycle("incoming size: ${incoming.size}")
-        dependencyCache.fill(incoming)
-
-        val outputDir = File(rootDir, configuration.name)
-        outputDir.mkdirs()
-        formatter.saveTopDependencies(outputDir, incoming.map { it.toLibKey() })
-        logger.lifecycle("####### PROCESSING ${configuration.name} END")
-    }
-
-
 }
 
 internal data class GraphUseCaseParams(
-    val configurations: Set<Configuration>
+    val configurations: Set<Configuration>,
+    val startupFlags: StartupFlags,
 ) : UseCaseParams

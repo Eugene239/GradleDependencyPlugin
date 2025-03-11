@@ -3,3 +3,13 @@ package io.github.eugene239.gradle.plugin.dependency.internal
 
 internal const val UNSPECIFIED_VERSION = "unspecified"
 internal const val OUTPUT_PATH = "dependency-ui"
+internal val PREP_RELEASE_KEYS = setOf(
+    "rc", "alpha", "beta", "snapshot",
+    "preview", "dev", "incubating",
+    // adding keys m1, b9, p2, a3... too
+    *setOf(
+        IntRange(0, 10).map { setOf("m$it", "b$it", "p$it", "a$it") }
+    ).flatten()
+        .flatten()
+        .toTypedArray()
+)

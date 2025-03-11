@@ -1,6 +1,5 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.ui
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonArray
@@ -18,7 +17,6 @@ internal class DefaultUiSaver(
         private const val BASE_SITE_FILE = "index.html"
     }
 
-    @OptIn(ExperimentalSerializationApi::class)
     private val prettyEncoder = Json {
         prettyPrint = true
         explicitNulls = false

@@ -5,10 +5,11 @@
 - make ui pretty (optional)
 - make solution for project modules
 - make MD dependency report
-- remove koin?
+- remove koin
 - 
 ### Todo:
 - update doc after publishing 
 - refactor code
 - library size info
-- remove koin?
+- check metadata to check if version exists
+- add to repositoryCache group caching
