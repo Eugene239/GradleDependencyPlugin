@@ -3,7 +3,7 @@ package io.github.eugene239.gradle.plugin.dependency.internal
 
 internal const val UNSPECIFIED_VERSION = "unspecified"
 internal const val OUTPUT_PATH = "dependency-ui"
-private val PREP_RELEASE_KEYS = setOf(
+internal val PREP_RELEASE_KEYS = setOf(
     "rc", "alpha", "beta", "snapshot",
     "preview", "dev", "incubating",
     // adding keys m1, b9, p2, a3... too

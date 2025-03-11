@@ -10,6 +10,7 @@ export default defineConfig(({ mode })=> ({
     vue(),
     vueDevTools(),
   ],
+  base: './',
   publicDir: mode === 'development',
   json: {
     stringify : true,

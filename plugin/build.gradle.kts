@@ -8,7 +8,7 @@ plugins {
 }
 
 val major = 0
-val minor = 1
+val minor = 2
 val patch = 0
 
 val libraryVersion = LibVersions.getLibVersion(

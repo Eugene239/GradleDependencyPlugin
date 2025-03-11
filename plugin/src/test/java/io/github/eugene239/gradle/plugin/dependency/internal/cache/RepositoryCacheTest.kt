@@ -4,7 +4,6 @@ import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.repository.RepositoryCache
 import io.github.eugene239.gradle.plugin.dependency.internal.provider.RepositoryProvider
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenService
-import io.github.eugene239.gradle.plugin.dependency.internal.toIdentifier
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -46,8 +45,8 @@ internal class RepositoryCacheTest {
         )
         val dependency2 = dependency1.copy(version = version2)
         // WHEN
-        repositoryCache.get(dependency1.toIdentifier())
-        repositoryCache.get(dependency2.toIdentifier())
+        repositoryCache.get(dependency1)
+        repositoryCache.get(dependency2)
         // THEN
         coVerify(exactly = 1) { mavenService.isMetadataExists(any(), any()) }
     }

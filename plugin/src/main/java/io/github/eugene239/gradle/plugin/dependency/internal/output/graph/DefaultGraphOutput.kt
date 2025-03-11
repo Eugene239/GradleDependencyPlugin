@@ -12,12 +12,13 @@ internal class DefaultGraphOutput(
     private val rootDir: File,
     private val uiSaver: UiSaver
 ) : GraphOutput {
+
     private val prettyEncoder = Json {
         prettyPrint = true
         explicitNulls = false
     }
 
-    override fun save(pluginConfiguration: PluginConfiguration?, flatDependencies: FlatDependencies, topDependencies: TopDependencies?): File {
+    override fun save(pluginConfiguration: PluginConfiguration, flatDependencies: FlatDependencies, topDependencies: TopDependencies): File {
         savePluginConfiguration(pluginConfiguration)
         saveFlatDependencies(flatDependencies)
         saveTopDependencies(topDependencies)
@@ -25,7 +26,10 @@ internal class DefaultGraphOutput(
     }
 
     private fun savePluginConfiguration(pluginConfiguration: PluginConfiguration?) {
-
+        val json = prettyEncoder.encodeToString(pluginConfiguration)
+        val file = File(rootDir, "configurations.json")
+        file.createNewFile()
+        file.writeText(json)
     }
 
     private fun saveFlatDependencies(flatDependencies: FlatDependencies) {
@@ -37,7 +41,14 @@ internal class DefaultGraphOutput(
         file.writeText(json)
     }
 
-    private fun saveTopDependencies(topDependencies: TopDependencies?) {
-
+    private fun saveTopDependencies(topDependencies: TopDependencies) {
+        topDependencies.getData().forEach { (configuration, dependencies) ->
+            val dir = File(rootDir, configuration)
+            dir.mkdirs()
+            val file = File(dir, "top-dependencies.json")
+            file.createNewFile()
+            val json = prettyEncoder.encodeToString(dependencies.sorted())
+            file.writeText(json)
+        }
     }
 }

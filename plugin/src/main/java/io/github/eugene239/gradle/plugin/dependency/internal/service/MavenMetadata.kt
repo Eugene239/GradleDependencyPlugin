@@ -16,7 +16,11 @@ internal data class MavenMetadata(
     val artifactId: String?,
     @XmlElement(true)
     @XmlSerialName("versioning")
-    val versioning: Versioning
+    val versioning: Versioning,
+
+    // Path of metadata to validate
+    @XmlElement(false)
+    var url: String? = null
 )
 
 @Serializable
@@ -26,6 +30,16 @@ internal data class Versioning(
     val latest: String?,
     @XmlElement(true)
     @XmlSerialName("release")
-    val release: String?
+    val release: String?,
+
+    @XmlElement(true)
+    @XmlSerialName("versions")
+    val versions: Versions?
+)
+
+@Serializable
+internal data class Versions(
+    @XmlElement(true)
+    val version: List<String> = emptyList()
 )
 

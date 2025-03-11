@@ -7,7 +7,6 @@ import io.github.eugene239.gradle.plugin.dependency.internal.cache.rethrowCancel
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenService
 import io.github.eugene239.gradle.plugin.dependency.internal.service.Pom
 import io.github.eugene239.gradle.plugin.dependency.internal.service.Repository
-import io.github.eugene239.gradle.plugin.dependency.internal.toIdentifier
 import org.gradle.internal.cc.base.logger
 import java.util.concurrent.ConcurrentHashMap
 
@@ -25,7 +24,7 @@ internal class PomCache(
         }
 
         logger.debug("PomCache missed $key")
-        val repository = repositoryCache.get(key.toIdentifier())
+        val repository = repositoryCache.get(key)
 
         repository
             .onSuccess {

@@ -7,10 +7,14 @@ import io.github.eugene239.gradle.plugin.dependency.internal.cache.children.Chil
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.pom.PomCache
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.repository.RepositoryCache
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.rethrowCancellationException
+import io.github.eugene239.gradle.plugin.dependency.internal.exception.RepositoryException
 import io.github.eugene239.gradle.plugin.dependency.internal.filter.DependencyFilter
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.DefaultGraphOutput
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.GraphOutput
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.FlatDependencies
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.PluginConfiguration
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.ProjectConfiguration
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.TopDependencies
 import io.github.eugene239.gradle.plugin.dependency.internal.provider.DefaultRepositoryProvider
 import io.github.eugene239.gradle.plugin.dependency.internal.service.DefaultMavenService
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenService
@@ -18,6 +22,7 @@ import io.github.eugene239.gradle.plugin.dependency.internal.toIdentifier
 import io.github.eugene239.gradle.plugin.dependency.internal.toLibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.ui.DefaultUiSaver
 import io.github.eugene239.gradle.plugin.dependency.internal.ui.UiSaver
+import io.github.eugene239.plugin.BuildConfig
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -67,15 +72,17 @@ internal class GraphUseCase(
         logger.info("Start execution with params: $params")
         rootDir.mkdirs()
 
-        val dependencies = params.configurations
-            .map { configuration ->
-                configuration.incoming.resolutionResult.root.dependencies
-                    .asSequence()
-                    .filterIsInstance<ResolvedDependencyResult>()
-                    .filter { dependencyFilter.isSubmodule(it).not() && dependencyFilter.matches(it) }
-                    .toSet()
-                    .map { it.toLibKey() }
-            }
+        val topDependencies = params.configurations.associateWith { configuration ->
+            configuration.incoming.resolutionResult.root.dependencies
+                .asSequence()
+                .filterIsInstance<ResolvedDependencyResult>()
+                .filter { dependencyFilter.isSubmodule(it).not() && dependencyFilter.matches(it) }
+                .toSet()
+                .map { it.toLibKey() }
+                .toSet()
+        }
+
+        val dependencies = topDependencies.map { entry -> entry.value }
             .flatten()
             .toSet()
 
@@ -94,16 +101,21 @@ internal class GraphUseCase(
             }.awaitAll()
         }
 
-        val errors = childrenCache.getErrors()
-        errors.forEach { entry ->
-            println(entry.key)
-            entry.value.exceptionOrNull()?.printStackTrace()
-        }
-
         return output.save(
-            flatDependencies = FlatDependencies(
-                map
-            )
+            pluginConfiguration = PluginConfiguration(
+                configurations = params.configurations.map {
+                    ProjectConfiguration(
+                        name = it.name,
+                        description = it.description
+                    )
+                }.toSet(),
+                version = BuildConfig.PLUGIN_VERSION,
+                startupFlags = StartupFlags(
+                    fetchVersions = false
+                )
+            ),
+            topDependencies = TopDependencies(topDependencies),
+            flatDependencies = FlatDependencies(map)
         )
     }
 
@@ -128,8 +140,16 @@ internal class GraphUseCase(
             logger.lifecycle("Processed: $libKey")
         }.rethrowCancellationException()
             .onFailure {
-                logger.error("[ERROR] $libKey : ${it.message}", it)
-                throw it
+                when (it) {
+                    is RepositoryException.RepositoryWithVersionInMetadataNotFound -> {
+                        logger.warn("[WARN] ${it.message}")
+                    }
+
+                    else -> {
+                        logger.error("[ERROR] $libKey : ${it.message}", it)
+                        throw it
+                    }
+                }
             }
     }
 }

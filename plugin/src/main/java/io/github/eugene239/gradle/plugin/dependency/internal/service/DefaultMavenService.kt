@@ -8,7 +8,6 @@ import io.github.eugene239.gradle.plugin.dependency.internal.provider.Repository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
-import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
@@ -17,9 +16,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.xml.xml
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.withPermit
-import kotlinx.io.IOException
 import org.gradle.api.logging.Logger
 import java.net.URL
 
@@ -31,8 +28,8 @@ internal class DefaultMavenService(
     private val client: HttpClient = HttpClient(CIO) {
         install(HttpTimeout) {
             requestTimeoutMillis = 10_000
-            connectTimeoutMillis = 5_000
-            socketTimeoutMillis = 5_000
+            connectTimeoutMillis = 10_000
+            socketTimeoutMillis = 10_000
         }
 //        install(HttpRequestRetry) {
 //            retryOnExceptionIf(
@@ -67,11 +64,13 @@ internal class DefaultMavenService(
 
     override suspend fun getMetadata(libIdentifier: LibIdentifier, repository: Repository): MavenMetadata {
         return repository.withPermit {
+            val url = getMetadataUrl(libIdentifier, repository)
             client.get(getMetadataUrl(libIdentifier, repository)) {
                 repository.authorization?.let {
                     headers.appendAll(it.toStringValues())
                 }
             }.body<MavenMetadata>()
+                .copy(url = url)
         }
     }
 

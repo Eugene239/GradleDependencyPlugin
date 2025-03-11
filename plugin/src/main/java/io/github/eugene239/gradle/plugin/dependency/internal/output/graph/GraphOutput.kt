@@ -8,8 +8,8 @@ import java.io.File
 internal interface GraphOutput {
 
     fun save(
-        pluginConfiguration: PluginConfiguration? = null,
+        pluginConfiguration: PluginConfiguration,
         flatDependencies: FlatDependencies,
-        topDependencies: TopDependencies? = null
+        topDependencies: TopDependencies
     ): File
 }

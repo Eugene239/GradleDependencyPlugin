@@ -1,21 +1,13 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.filter
 
-import io.github.eugene239.gradle.plugin.dependency.internal.formatter.graph.old.DependencyNode
-import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
 
 internal class DependencyFilter(
-    private val project: Project,
+    private val rootProjectName: String
 ) : RegexFilter {
 
     private var regex: Regex? = null
-
-    private val rootProjectName = project.rootProject.name
-
-    override fun matches(dependency: DependencyNode): Boolean {
-        return matches(dependency.name)
-    }
 
     override fun matches(dependency: String): Boolean {
         val group = dependency.split(":").first()

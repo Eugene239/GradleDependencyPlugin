@@ -30,7 +30,6 @@ internal object MavenPomPropertiesXmlSerializer : KSerializer<Properties> {
 
             }
             element = reader.next()
-            // println(element.makeString(reader))
         }
         return map
     }
@@ -47,22 +46,9 @@ internal object MavenPomPropertiesXmlSerializer : KSerializer<Properties> {
         return null
     }
 
-    private fun EventType.makeString(reader: XmlReader): String {
-        return if (isTextElement) {
-            "[$this] ${reader.text}"
-        } else {
-            return if (EventType.END_ELEMENT == this || EventType.START_ELEMENT == this) {
-                "[$this] ${reader.localName}"
-            } else {
-                "[$this]"
-            }
-        }
-    }
-
-
     private fun decode(decoder: Decoder): Properties {
         val reader = (decoder as? XML.XmlInput)?.input ?: return Properties()
-        return Properties(entries =  readProperties(reader))
+        return Properties(entries = readProperties(reader))
     }
 
     override fun deserialize(decoder: Decoder) = decode(decoder)

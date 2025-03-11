@@ -50,7 +50,6 @@ internal class ChildrenCache(
             when (it) {
                 is PomException.PomNotFoundException -> {
                     logger.warn("Pom not found for $libKey", it)
-                    throw it // todo remove
                     return emptyList()
                 }
 
