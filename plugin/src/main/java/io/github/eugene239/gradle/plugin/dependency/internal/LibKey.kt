@@ -12,12 +12,18 @@ internal data class LibIdentifier(
 internal data class LibKey(
     val group: String,
     val module: String,
-    val version: String
+    val version: String,
 ) {
     override fun toString(): String {
         return "$group:$module:$version"
     }
 }
+
+internal data class LibDetails(
+    val key: LibKey,
+    val isStrict: Boolean,
+    val isSubmodule: Boolean
+)
 
 internal fun LibKey.toIdentifier(): LibIdentifier {
     return LibIdentifier(

@@ -1,8 +1,10 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.output.graph
 
+import io.github.eugene239.gradle.plugin.dependency.internal.LibIdentifier
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.FlatDependencies
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.PluginConfiguration
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.TopDependencies
+import io.github.eugene239.gradle.plugin.dependency.internal.Versions
 import io.github.eugene239.gradle.plugin.dependency.internal.ui.UiSaver
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
@@ -18,10 +20,16 @@ internal class DefaultGraphOutput(
         explicitNulls = false
     }
 
-    override fun save(pluginConfiguration: PluginConfiguration, flatDependencies: FlatDependencies, topDependencies: TopDependencies): File {
+    override fun save(
+        pluginConfiguration: PluginConfiguration,
+        flatDependencies: FlatDependencies,
+        topDependencies: TopDependencies,
+        libVersions: Map<LibIdentifier, Versions>
+    ): File {
         savePluginConfiguration(pluginConfiguration)
         saveFlatDependencies(flatDependencies)
         saveTopDependencies(topDependencies)
+        saveLibVersions(libVersions)
         return uiSaver.save(rootDir)
     }
 
@@ -50,5 +58,13 @@ internal class DefaultGraphOutput(
             val json = prettyEncoder.encodeToString(dependencies.sorted())
             file.writeText(json)
         }
+    }
+
+    private fun saveLibVersions(libVersions: Map<LibIdentifier, Versions>) {
+        val data = libVersions.mapKeys { entry-> entry.key.toString() }
+        val json = prettyEncoder.encodeToString(data)
+        val file = File(rootDir, "conflicts.json")
+        file.createNewFile()
+        file.writeText(json)
     }
 }

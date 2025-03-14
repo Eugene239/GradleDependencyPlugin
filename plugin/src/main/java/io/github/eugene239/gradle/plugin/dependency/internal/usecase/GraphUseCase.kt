@@ -12,6 +12,7 @@ import io.github.eugene239.gradle.plugin.dependency.internal.filter.DependencyFi
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.DefaultGraphOutput
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.GraphOutput
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.FlatDependencies
+import io.github.eugene239.gradle.plugin.dependency.internal.LibVersions
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.PluginConfiguration
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.ProjectConfiguration
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.TopDependencies
@@ -19,7 +20,7 @@ import io.github.eugene239.gradle.plugin.dependency.internal.provider.DefaultRep
 import io.github.eugene239.gradle.plugin.dependency.internal.service.DefaultMavenService
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenService
 import io.github.eugene239.gradle.plugin.dependency.internal.toIdentifier
-import io.github.eugene239.gradle.plugin.dependency.internal.toLibKey
+import io.github.eugene239.gradle.plugin.dependency.internal.toLibDetails
 import io.github.eugene239.gradle.plugin.dependency.internal.ui.DefaultUiSaver
 import io.github.eugene239.gradle.plugin.dependency.internal.ui.UiSaver
 import io.github.eugene239.plugin.BuildConfig
@@ -66,7 +67,7 @@ internal class GraphUseCase(
 ) : UseCase<GraphUseCaseParams, File> {
 
     private val map = ConcurrentHashMap<LibKey, List<LibKey>>()
-
+    private val libVersions = LibVersions()
 
     override suspend fun execute(params: GraphUseCaseParams): File {
         logger.info("Start execution with params: $params")
@@ -76,17 +77,18 @@ internal class GraphUseCase(
             configuration.incoming.resolutionResult.root.dependencies
                 .asSequence()
                 .filterIsInstance<ResolvedDependencyResult>()
-                .filter { dependencyFilter.isSubmodule(it).not() && dependencyFilter.matches(it) }
+                .filter { dependencyFilter.matches(it) }
                 .toSet()
-                .map { it.toLibKey() }
+                .map { it.toLibDetails(isSubmodule = dependencyFilter.isSubmodule(it)) }
                 .toSet()
         }
 
-        val dependencies = topDependencies.map { entry -> entry.value }
+        val dependencies = topDependencies
+            .map { entry -> entry.value }
             .flatten()
             .toSet()
 
-        val identifiers = dependencies.map { it.toIdentifier() }.toSet()
+        val identifiers = dependencies.map { it.key.toIdentifier() }.toSet()
 
         logger.lifecycle("Getting info about ${dependencies.size} dependencies")
         if (logger.isInfoEnabled) {
@@ -97,7 +99,10 @@ internal class GraphUseCase(
 
         withContext(ioDispatcher) {
             dependencies.map {
-                async { processDependency(libKey = it, identifiers) }
+                async {
+                    libVersions.setResolved(it.key.toIdentifier(), it.key.version)
+                    processDependency(libKey = it.key, identifiers)
+                }
             }.awaitAll()
         }
 
@@ -114,8 +119,9 @@ internal class GraphUseCase(
                     fetchVersions = false
                 )
             ),
-            topDependencies = TopDependencies(topDependencies),
-            flatDependencies = FlatDependencies(map)
+            topDependencies = TopDependencies(topDependencies.mapValues { entry -> entry.value.map { it.key }.toSet() }),
+            flatDependencies = FlatDependencies(map),
+            libVersions = libVersions.getConflictData()
         )
     }
 
@@ -127,7 +133,7 @@ internal class GraphUseCase(
         ) {
             return@coroutineScope
         }
-
+        libVersions.add(libKey.toIdentifier(), libKey.version)
         val childrenResult = childrenCache.get(libKey)
 
         childrenResult.onSuccess { children ->

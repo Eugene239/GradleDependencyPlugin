@@ -99,6 +99,6 @@ internal class RepositoryCache(
     }
 
     private fun MavenMetadata.containsVersion(libKey: LibKey): Boolean {
-        return versioning.versions?.version?.contains(libKey.version) == true
+        return versioning?.versions?.version?.contains(libKey.version) == true
     }
 }

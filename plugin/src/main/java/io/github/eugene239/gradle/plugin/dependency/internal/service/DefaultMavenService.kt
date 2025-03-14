@@ -5,6 +5,7 @@ import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.exception.PomException
 import io.github.eugene239.gradle.plugin.dependency.internal.exception.WIPException
 import io.github.eugene239.gradle.plugin.dependency.internal.provider.RepositoryProvider
+import io.github.eugene239.gradle.plugin.dependency.internal.service.simplexml.SimpleXmlConverter
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
@@ -15,7 +16,6 @@ import io.ktor.client.request.head
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
-import io.ktor.serialization.kotlinx.xml.xml
 import kotlinx.coroutines.sync.withPermit
 import org.gradle.api.logging.Logger
 import java.net.URL
@@ -44,11 +44,14 @@ internal class DefaultMavenService(
 //            delayMillis { retry: Int -> retry * 1000L }
 //        }
         install(ContentNegotiation) {
-            xml(
-                contentType = ContentType.Any,
-                format = XmlFormat.format
-            )
+            register(ContentType.Any, SimpleXmlConverter())
         }
+//        install(ContentNegotiation) {
+//            xml(
+//                contentType = ContentType.Any,
+//                format = XmlFormat.format
+//            )
+//        }
     }
 
     override suspend fun isMetadataExists(libIdentifier: LibIdentifier, repository: Repository): Result<Boolean> = kotlin.runCatching {

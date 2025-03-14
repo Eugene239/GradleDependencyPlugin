@@ -46,9 +46,7 @@ abstract class DependencyGraphTask : BaseTask() {
         val configurations = if (configuration.isBlank()) {
             project.filteredConfigurations()
         } else {
-            setOf(project.configurations.findByName(configuration))
-                .filterNotNull()
-                .toSet()
+            project.configurations.findByName(configuration)?.let { setOf(it) } ?: emptySet()
         }
         if (filter.isBlank()) {
             dependencyFilter.setRegex(null)

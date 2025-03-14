@@ -41,9 +41,20 @@ internal class ChildrenCache(
                 .filter { it.scope == null || ignoreScope.contains(it.scope).not() }
                 .map { dependency ->
                     LibKey(
-                        group = dependency.groupId,
-                        module = dependency.artifactId,
-                        version = getVersion(pom, dependency, libKey)
+                        group = dependency.groupId!!,
+                        module = dependency.artifactId!!,
+                        version = kotlin.runCatching {
+                            getVersion(pom, dependency, libKey)
+                        }.onFailure {
+                            when (it) {
+                                is DependencyException.VersionNotFoundException -> {
+                                    logger.warn("Can't find version for $libKey", it)
+                                }
+
+                                else -> throw it
+                            }
+                        }
+                            .getOrNull().orEmpty()
                     )
                 }
         }.onFailure {
@@ -61,21 +72,22 @@ internal class ChildrenCache(
 
     private suspend fun getVersion(pom: Pom, dependency: Dependency, parent: LibKey?): String {
         var versionKey: String? = null
+        val version = dependency.version
         var result: String? = when {
-            dependency.version == null -> null
+            version == null -> null
 
-            dependency.version.startsWith("[") -> {
-                dependency.version.split(",").first().removePrefix("[").removeSuffix("]").also {
+            version.startsWith("[") -> {
+                version.split(",").first().removePrefix("[").removeSuffix("]").also {
                     logger.debug("Took version from list: $it (${dependency.version})")
                 }
             }
 
-            dependency.version.lowercase() == "\${project.version}" -> {
+            version.lowercase() == "\${project.version}" -> {
                 pom.version
             }
 
-            dependency.version.startsWith("\${") -> {
-                versionKey = dependency.version.removePrefix("\${").removeSuffix("}")
+            version.startsWith("\${") -> {
+                versionKey = version.removePrefix("\${").removeSuffix("}")
                 pom.properties?.entries?.get(versionKey)
             }
 
@@ -87,10 +99,10 @@ internal class ChildrenCache(
         }
 
         if (result == null) {
-            result = getVersionFromParent(pom, LibIdentifier(group = dependency.groupId, module = dependency.artifactId), versionKey)
+            result = getVersionFromParent(pom, LibIdentifier(group = dependency.groupId!!, module = dependency.artifactId!!), versionKey)
         }
         if (result == null) {
-            throw DependencyException.VersionNotFoundException(groupId = dependency.groupId, module = dependency.artifactId, parent = parent)
+            throw DependencyException.VersionNotFoundException(groupId = dependency.groupId!!, module = dependency.artifactId!!, parent = parent)
         }
         return result
     }
@@ -98,7 +110,7 @@ internal class ChildrenCache(
     private suspend fun getVersionFromParent(pom: Pom, identifier: LibIdentifier, versionKey: String?): String? {
         logger.debug("ChildrenCache getVersion from parent $identifier")
         val parent = pom.parent ?: return null
-        val parentKey = LibKey(group = parent.groupId, module = parent.artifactId, version = parent.version)
+        val parentKey = LibKey(group = parent.groupId!!, module = parent.artifactId!!, version = parent.version!!)
         val parentPomResult = pomCache.get(parentKey)
 
         return parentPomResult
@@ -112,9 +124,10 @@ internal class ChildrenCache(
                 }
                 val dependency = parentPom.dependencyManagement?.dependencies?.dependency?.find { it.groupId == identifier.group && it.artifactId == identifier.module }
                 logger.debug("Parent dependency $dependency")
+                val version = dependency?.version
                 return@map when {
-                    dependency?.version?.startsWith("\${") == true -> {
-                        val key = dependency.version.removePrefix("\${").removeSuffix("}")
+                    version?.startsWith("\${") == true -> {
+                        val key = version.removePrefix("\${").removeSuffix("}")
                         parentPom.properties?.entries?.get(key).also {
                             logger.debug("Got version from properties: key:$key = $it")
                         }
@@ -125,7 +138,7 @@ internal class ChildrenCache(
                     }
                     // Recursive call to get version from grandparent if possible
                     parentPom.parent != null -> {
-                        getVersionFromParent(parentPom, LibIdentifier(group = parent.groupId, module = parent.artifactId), versionKey)
+                        getVersionFromParent(parentPom, LibIdentifier(group = parent.groupId!!, module = parent.artifactId!!), versionKey)
                     }
 
                     else -> null
