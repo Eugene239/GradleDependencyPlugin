@@ -4,5 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 internal data class StartupFlags(
-    val fetchVersions: Boolean
+    val fetchVersions: Boolean = false,
+    val fetchLibSize: Boolean = false
 )

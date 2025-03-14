@@ -10,6 +10,7 @@ abstract class BaseTask : DefaultTask() {
 
     companion object {
         const val DEFAULT_LIMIT = 20
+        const val DEFAULT_CONNECTION_TIMEOUT: Long = 10_000
     }
 
     @TaskAction

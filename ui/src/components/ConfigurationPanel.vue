@@ -1,10 +1,9 @@
 <script>
 import {inject, ref} from "vue";
-import TreeRow from "@/components/TreeRow.vue";
 import SvgTree from "@/components/svg/SvgTree.vue";
 
 export default {
-  components: {TreeRow, SvgTree},
+  components: { SvgTree},
   props: {
     configuration: {
       type: Object,
@@ -12,7 +11,7 @@ export default {
     }
   },
   setup() {
-    const cache = inject("cache");
+    const cache = inject("flatDependenciesCache");
     return {
       cache
     }
@@ -49,7 +48,7 @@ export default {
   methods: {
     ref,
     async loadConfiguration() {
-      const response = await fetch(this.configuration.name + "/top-dependencies.json")
+      const response = await fetch(`${this.configuration.name}/top-dependencies.json`)
       const data = await response.json();
       this.treeList = this.cache.getDependencies(this.configuration, data).map(entry => {
         entry.id = crypto.randomUUID();

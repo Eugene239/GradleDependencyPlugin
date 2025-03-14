@@ -36,13 +36,13 @@ internal class LatestVersionCache(
 
     private fun toVersions(metadata: MavenMetadata): Set<ModuleDescriptor.Version> {
         val set = mutableSetOf<ModuleDescriptor.Version>()
-        metadata.versioning.latest?.tryParse()?.let {
+        metadata.versioning?.latest?.tryParse()?.let {
             set.add(it)
         }
-        metadata.versioning.release?.tryParse()?.let {
+        metadata.versioning?.release?.tryParse()?.let {
             set.add(it)
         }
-        set.addAll(metadata.versioning.versions?.version?.mapNotNull { it.tryParse() } ?: emptyList())
+        set.addAll(metadata.versioning?.versions?.version?.mapNotNull { it.tryParse() } ?: emptyList())
         return set
             .filter { version -> PREP_RELEASE_KEYS.any { version.toString().lowercase().contains(it) }.not() }
             .toSet()

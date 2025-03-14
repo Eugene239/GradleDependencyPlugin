@@ -1,9 +1,8 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.cache.pom
 
 import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
-import io.github.eugene239.gradle.plugin.dependency.internal.cache.Cache
-import io.github.eugene239.gradle.plugin.dependency.internal.cache.repository.RepositoryCache
-import io.github.eugene239.gradle.plugin.dependency.internal.cache.rethrowCancellationException
+import io.github.eugene239.gradle.plugin.dependency.internal.cache.repository.RepositoryByNameCache
+import io.github.eugene239.gradle.plugin.dependency.internal.rethrowCancellationException
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenService
 import io.github.eugene239.gradle.plugin.dependency.internal.service.Pom
 import io.github.eugene239.gradle.plugin.dependency.internal.service.Repository
@@ -12,27 +11,21 @@ import java.util.concurrent.ConcurrentHashMap
 
 internal class PomCache(
     private val mavenService: MavenService,
-    private val repositoryCache: RepositoryCache
-) : Cache<LibKey, Result<Pom>> {
+    private val repositoryCache: RepositoryByNameCache
+) {
 
     private val cache = ConcurrentHashMap<LibKey, Result<Pom>>()
 
-    override suspend fun get(key: LibKey): Result<Pom> {
+    suspend fun get(key: LibKey, repositoryName: String): Result<Pom> {
         cache[key]?.let {
             logger.debug("PomCache found: $key")
             return it
         }
 
         logger.debug("PomCache missed $key")
-        val repository = repositoryCache.get(key)
+        val repository = repositoryCache.get(key, repositoryName)
 
-        repository
-            .onSuccess {
-                cache[key] = kotlin.runCatching { getPom(key, it) }.rethrowCancellationException()
-            }
-            .onFailure {
-                cache[key] = Result.failure(it)
-            }
+        cache[key] = kotlin.runCatching { getPom(key, repository) }.rethrowCancellationException()
 
         return cache[key]!!
     }

@@ -1,15 +1,7 @@
-## TBD
-### Completed:
-- make task run after compile task
-- generate different `dependency.json` file for all project configurations (optional)
-- make ui pretty (optional)
-- make solution for project modules
-- make MD dependency report
-- remove koin
-- 
-### Todo:
+## Todo:
 - update doc after publishing 
-- refactor code
 - library size info
-- check metadata to check if version exists
-- add to repositoryCache group caching
+- flat dependencies by configuration
+- Strictly versions
+- calculate top dependency on web to draw graph
+- make reading graph on web with promise

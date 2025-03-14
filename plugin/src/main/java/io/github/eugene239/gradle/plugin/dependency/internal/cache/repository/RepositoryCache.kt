@@ -3,21 +3,23 @@ package io.github.eugene239.gradle.plugin.dependency.internal.cache.repository
 import io.github.eugene239.gradle.plugin.dependency.internal.LibIdentifier
 import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.Cache
-import io.github.eugene239.gradle.plugin.dependency.internal.cache.rethrowCancellationException
+import io.github.eugene239.gradle.plugin.dependency.internal.containsVersion
 import io.github.eugene239.gradle.plugin.dependency.internal.exception.RepositoryException
 import io.github.eugene239.gradle.plugin.dependency.internal.provider.RepositoryProvider
+import io.github.eugene239.gradle.plugin.dependency.internal.rethrowCancellationException
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenMetadata
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenService
 import io.github.eugene239.gradle.plugin.dependency.internal.service.Repository
 import io.github.eugene239.gradle.plugin.dependency.internal.toIdentifier
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.util.collections.ConcurrentMap
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.gradle.internal.cc.base.logger
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
+@Deprecated("Use RepositoryByNameCache")
 internal class RepositoryCache(
     private val repositoryProvider: RepositoryProvider,
     private val mavenService: MavenService,
@@ -78,11 +80,18 @@ internal class RepositoryCache(
                             cache.putIfAbsent(identifier, hashMapOf())
                             cache[identifier]?.putIfAbsent(repository, metadata)
                         }
-                    }.onFailure {
-                        if (it !is CancellationException) {
-                            logger.warn("failed to get metadata for $key in $repository", it)
+                    }.rethrowCancellationException()
+                        .onFailure {
+                            when (it) {
+                                is HttpRequestTimeoutException -> {
+                                    logger.warn("TimeoutException for $key in ${repository.url}, try to change `connection-timeout` parameter and restart task")
+                                }
+
+                                else -> {
+                                    logger.warn("failed to get metadata for $key in ${repository.url}", it)
+                                }
+                            }
                         }
-                    }
                 }
             cache[identifier]
                 ?.entries
@@ -98,7 +107,4 @@ internal class RepositoryCache(
         }
     }
 
-    private fun MavenMetadata.containsVersion(libKey: LibKey): Boolean {
-        return versioning.versions?.version?.contains(libKey.version) == true
-    }
 }

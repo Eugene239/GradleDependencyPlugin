@@ -19,7 +19,7 @@ internal class DefaultRepositoryProvider(
 
     private val repositoriesSet: Set<Repository> by lazy { collect() }
     private val repositoryLimit: Map<Repository, Semaphore> by lazy {
-        collect().associateWith { Semaphore(limit) }
+        repositoriesSet.associateWith { Semaphore(limit) }
     }
 
     override fun getRepositories(): Set<Repository> {

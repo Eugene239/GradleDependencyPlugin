@@ -1,35 +1,34 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.service
 
-import kotlinx.serialization.decodeFromString
 import org.junit.Assert
 import org.junit.Test
 
-internal class MavenPomPropertiesXmlSerializerTest {
+internal class PropertiesConverterTest {
 
-    private val xml = XmlFormat.format
+    private val serializer = XmlFormat.serializer
 
     @Test
     fun `parse properties with custom serializer`() {
         // WHEN
-        val pom: Pom = xml.decodeFromString(xmlText)
+        val pom: Pom = serializer.read(Pom::class.java, xmlText)
         // THEN
         Assert.assertNotNull(pom.properties?.entries)
-        Assert.assertEquals(pom.properties?.entries?.size, 7)
+        Assert.assertEquals(pom.properties?.entries?.size, 8)
     }
 
     @Test
     fun `parse pom with and without namespace`() {
         // WHEN
-        xml.decodeFromString<Pom>(xmlText)
-        xml.decodeFromString<Pom>(xmlWithoutNamespace)
+        serializer.read(Pom::class.java, xmlText)
+        serializer.read(Pom::class.java, xmlWithoutNamespace)
     }
 
     @Test
     fun `parse maven metadata with versions`() {
         // WHEN
-        val metadata = xml.decodeFromString<MavenMetadata>(metadata)
+        val metadata = serializer.read(MavenMetadata::class.java, metadata)
         // THEN
-        Assert.assertEquals(metadata.versioning.versions?.version?.contains("4.3.0-7b54459-SNAPSHOT"), true)
+        Assert.assertEquals(metadata.versioning?.versions?.version?.contains("4.3.0-7b54459-SNAPSHOT"), true)
     }
 
     private val xmlText = """

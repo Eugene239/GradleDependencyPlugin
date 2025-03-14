@@ -3,6 +3,7 @@ import Navbar from './components/Navbar.vue'
 import ConfigurationPanel from './components/ConfigurationPanel.vue'
 import {provide} from "vue";
 import {flatDependenciesCache} from "./cache/flatDependenciesCache.js";
+import {configurationsCache} from "@/cache/configurationsCache.js";
 
 export default {
   components: {
@@ -10,28 +11,27 @@ export default {
     ConfigurationPanel,
   },
   data() {
-    return {
-      configuration: null
-    }
-  },
-  setup() {
-    flatDependenciesCache.loadInitialCache();
-    provide("cache", flatDependenciesCache);
-    console.log("provided");
     return {}
   },
 
+  setup() {
+    provide("configurationsCache", configurationsCache);
+    provide("flatDependenciesCache", flatDependenciesCache);
+    return {}
+  },
+  mounted() {
+    this.loadCaches()
+  },
   methods: {
-    onConfigurationSelected(configuration) {
-      console.log(configuration)
-      this.configuration = configuration;
+    async loadCaches() {
+       await configurationsCache.loadInitialCache();
+       await flatDependenciesCache.loadInitialCache();
     }
   }
 }
 </script>
 
-
 <template>
-  <Navbar @select="onConfigurationSelected"/>
-  <ConfigurationPanel v-if="configuration !=null" :configuration="this.configuration"/>
+  <Navbar/>
+  <RouterView />
 </template>
