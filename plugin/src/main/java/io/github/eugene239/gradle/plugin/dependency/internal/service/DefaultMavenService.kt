@@ -22,14 +22,15 @@ import java.net.URL
 
 internal class DefaultMavenService(
     private val logger: Logger,
-    private val repositoryProvider: RepositoryProvider
+    private val repositoryProvider: RepositoryProvider,
+    private val timeoutMillis: Long,
 ) : MavenService {
 
     private val client: HttpClient = HttpClient(CIO) {
         install(HttpTimeout) {
-            requestTimeoutMillis = 10_000
-            connectTimeoutMillis = 10_000
-            socketTimeoutMillis = 10_000
+            requestTimeoutMillis = timeoutMillis
+            connectTimeoutMillis = timeoutMillis
+            socketTimeoutMillis = timeoutMillis
         }
 //        install(HttpRequestRetry) {
 //            retryOnExceptionIf(
@@ -46,12 +47,6 @@ internal class DefaultMavenService(
         install(ContentNegotiation) {
             register(ContentType.Any, SimpleXmlConverter())
         }
-//        install(ContentNegotiation) {
-//            xml(
-//                contentType = ContentType.Any,
-//                format = XmlFormat.format
-//            )
-//        }
     }
 
     override suspend fun isMetadataExists(libIdentifier: LibIdentifier, repository: Repository): Result<Boolean> = kotlin.runCatching {

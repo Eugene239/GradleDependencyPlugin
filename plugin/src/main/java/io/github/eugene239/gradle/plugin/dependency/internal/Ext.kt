@@ -18,7 +18,12 @@ internal fun DependencyResult.toLibDetails(isSubmodule: Boolean = false): LibDet
             version = moduleVersion.version
         ),
         isStrict = isStrictly,
-        isSubmodule = isSubmodule
+        isSubmodule = isSubmodule,
+        result = if (isSubmodule) {
+            selected
+        } else {
+            null
+        }
     )
 }
 

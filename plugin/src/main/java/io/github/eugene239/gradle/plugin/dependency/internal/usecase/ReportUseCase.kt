@@ -30,10 +30,7 @@ internal class ReportUseCase(
     private val formatter: ReportFormatter = MarkdownReportFormatter(rootDir),
     private val repositoryProvider: RepositoryProvider,
     private val dependencyFilter: DependencyFilter,
-    private val mavenService: MavenService = DefaultMavenService(
-        repositoryProvider = repositoryProvider,
-        logger = logger
-    ),
+    private val mavenService: MavenService,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val repositoryCache: RepositoryCache = RepositoryCache(
         repositoryProvider = repositoryProvider,

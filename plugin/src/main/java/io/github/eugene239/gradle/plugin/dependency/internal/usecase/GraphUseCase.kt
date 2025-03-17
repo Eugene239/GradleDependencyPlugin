@@ -1,5 +1,6 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.usecase
 
+import io.github.eugene239.gradle.plugin.dependency.internal.LibDetails
 import io.github.eugene239.gradle.plugin.dependency.internal.LibIdentifier
 import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.StartupFlags
@@ -41,11 +42,8 @@ internal class GraphUseCase(
     private val logger: Logger,
     private val dependencyFilter: DependencyFilter,
     private val repositoryProvider: DefaultRepositoryProvider,
-    private val mavenService: MavenService = DefaultMavenService(
-        repositoryProvider = repositoryProvider,
-        logger = logger
-    ),
-
+    private val isSubmodule: (ResolvedDependencyResult) -> Boolean,
+    private val mavenService: MavenService,
     private val uiSaver: UiSaver = DefaultUiSaver(logger = logger),
     private val output: GraphOutput = DefaultGraphOutput(
         rootDir = rootDir,
@@ -63,7 +61,7 @@ internal class GraphUseCase(
     ),
     private val childrenCache: ChildrenCache = ChildrenCache(
         pomCache = pomCache
-    )
+    ),
 ) : UseCase<GraphUseCaseParams, File> {
 
     private val map = ConcurrentHashMap<LibKey, List<LibKey>>()
@@ -79,32 +77,28 @@ internal class GraphUseCase(
                 .filterIsInstance<ResolvedDependencyResult>()
                 .filter { dependencyFilter.matches(it) }
                 .toSet()
-                .map { it.toLibDetails(isSubmodule = dependencyFilter.isSubmodule(it)) }
+                .map { it.toLibDetails(isSubmodule = isSubmodule.invoke(it)) }
                 .toSet()
         }
 
-        val dependencies = topDependencies
+        val allDependencies = topDependencies
             .map { entry -> entry.value }
             .flatten()
             .toSet()
 
-        val identifiers = dependencies.map { it.key.toIdentifier() }.toSet()
+        val submodules = allDependencies
+            .filter { it.isSubmodule }
+            .toSet()
 
-        logger.lifecycle("Getting info about ${dependencies.size} dependencies")
-        if (logger.isInfoEnabled) {
-            dependencies.forEach {
-                logger.info("- $it")
-            }
-        }
+        val dependencies = allDependencies
+            .filter { it.isSubmodule.not() }
+            .map { it.key }
+            .toSet()
 
-        withContext(ioDispatcher) {
-            dependencies.map {
-                async {
-                    libVersions.setResolved(it.key.toIdentifier(), it.key.version)
-                    processDependency(libKey = it.key, identifiers)
-                }
-            }.awaitAll()
-        }
+        val identifiers = dependencies.map { it.toIdentifier() }.toSet()
+        processDependencies(dependencies, identifiers)
+        processSubmodules(submodules, identifiers)
+
 
         return output.save(
             pluginConfiguration = PluginConfiguration(
@@ -123,6 +117,27 @@ internal class GraphUseCase(
             flatDependencies = FlatDependencies(map),
             libVersions = libVersions.getConflictData()
         )
+    }
+
+    private suspend fun processDependencies(dependencies: Set<LibKey>, identifiers: Set<LibIdentifier>) {
+        withContext(ioDispatcher) {
+            dependencies.map {
+                async {
+                    libVersions.setResolved(it.toIdentifier(), it.version)
+                    processDependency(libKey = it, identifiers)
+                }
+            }.awaitAll()
+        }
+    }
+
+    private suspend fun processSubmodules(submodules: Set<LibDetails>, identifiers: Set<LibIdentifier>) {
+        withContext(ioDispatcher) {
+            submodules.map {
+                async {
+                    processSubmodule(it, identifiers)
+                }
+            }.awaitAll()
+        }
     }
 
     private suspend fun processDependency(libKey: LibKey, identifiers: Set<LibIdentifier>): Unit = coroutineScope {
@@ -157,6 +172,35 @@ internal class GraphUseCase(
                     }
                 }
             }
+    }
+
+    private suspend fun processSubmodule(libDetails: LibDetails, identifiers: Set<LibIdentifier>) {
+        logger.debug("processSubmodule: ${libDetails.key}")
+        if (map[libDetails.key] != null) {
+            return
+        }
+        val children = libDetails.result?.dependencies
+            ?.filterIsInstance<ResolvedDependencyResult>()
+            .orEmpty()
+
+        val detailsSet = children
+            .filter { dependencyFilter.matches(it.toString()) }
+            .map { child -> child.toLibDetails(isSubmodule = isSubmodule.invoke(child)) }
+            .toSet()
+
+        map[libDetails.key] = detailsSet.map { it.key }
+
+        detailsSet.forEach { child ->
+            when {
+                child.isSubmodule -> {
+                    processSubmodule(child, identifiers)
+                }
+
+                else -> {
+                    processDependency(child.key, identifiers)
+                }
+            }
+        }
     }
 }
 

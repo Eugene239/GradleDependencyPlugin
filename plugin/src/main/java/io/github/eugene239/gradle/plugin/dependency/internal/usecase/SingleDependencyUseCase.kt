@@ -5,7 +5,6 @@ import io.github.eugene239.gradle.plugin.dependency.internal.cache.children.Chil
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.pom.PomCache
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.repository.RepositoryCache
 import io.github.eugene239.gradle.plugin.dependency.internal.provider.DefaultRepositoryProvider
-import io.github.eugene239.gradle.plugin.dependency.internal.service.DefaultMavenService
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenService
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -15,10 +14,7 @@ internal class SingleDependencyUseCase(
     private val logger: Logger,
     private val repositoryProvider: DefaultRepositoryProvider,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val mavenService: MavenService = DefaultMavenService(
-        repositoryProvider = repositoryProvider,
-        logger = logger
-    ),
+    private val mavenService: MavenService,
     private val repositoryCache: RepositoryCache = RepositoryCache(
         repositoryProvider = repositoryProvider,
         mavenService = mavenService,

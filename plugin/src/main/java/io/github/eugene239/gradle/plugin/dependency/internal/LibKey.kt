@@ -1,5 +1,8 @@
 package io.github.eugene239.gradle.plugin.dependency.internal
 
+import org.gradle.api.artifacts.result.ResolvedComponentResult
+
+
 internal data class LibIdentifier(
     val group: String,
     val module: String
@@ -22,7 +25,10 @@ internal data class LibKey(
 internal data class LibDetails(
     val key: LibKey,
     val isStrict: Boolean,
-    val isSubmodule: Boolean
+    val isSubmodule: Boolean,
+    @Transient
+    // not null only if submodule
+    val result: ResolvedComponentResult? = null
 )
 
 internal fun LibKey.toIdentifier(): LibIdentifier {
