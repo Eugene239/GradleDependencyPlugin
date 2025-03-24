@@ -8,7 +8,7 @@ plugins {
 }
 
 val major = 0
-val minor = 2
+val minor = 3
 val patch = 0
 
 val libraryVersion = LibVersions.getLibVersion(
@@ -90,7 +90,7 @@ dependencies {
     implementation(libs.ktor.client)
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.content.negotiation)
-    implementation(libs.ktor.serialization.xml)
+    implementation(libs.simple.xml)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

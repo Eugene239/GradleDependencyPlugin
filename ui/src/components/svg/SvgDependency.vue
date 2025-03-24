@@ -21,7 +21,7 @@ export default {
     radius: {
       type: String,
       required: false,
-      default: 6
+      default: "6"
     },
     color: {
       type: String,

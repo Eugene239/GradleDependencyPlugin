@@ -1,85 +1,85 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.service
 
-import io.github.eugene239.gradle.plugin.dependency.internal.service.serializer.MavenPomPropertiesXmlSerializer
-import kotlinx.serialization.Serializable
-import nl.adaptivity.xmlutil.serialization.XmlElement
-import nl.adaptivity.xmlutil.serialization.XmlSerialName
+import io.github.eugene239.gradle.plugin.dependency.internal.service.simplexml.PropertiesConverter
+import org.simpleframework.xml.Element
+import org.simpleframework.xml.ElementList
+import org.simpleframework.xml.Root
+import org.simpleframework.xml.convert.Convert
 
-@Serializable
+@Root(name = "project", strict = false)
 internal data class Pom(
-    @XmlElement(true)
-    @XmlSerialName("groupId")
+
+    @field:Element(name = "groupId", required = false)
     var groupId: String? = null,
-    @XmlElement(true)
-    @XmlSerialName("artifactId")
-    val artifactId: String?,
-    @XmlElement(true)
-    @XmlSerialName("version")
-    val version: String?,
-    @XmlElement(true)
-    @XmlSerialName("packaging")
-    val packaging: String? = null,
-    @XmlElement(true)
-    @XmlSerialName("dependencies")
-    val dependencies: Dependencies? = null,
-    @XmlElement(true)
-    @XmlSerialName("dependencyManagement")
-    val dependencyManagement: DependencyManagement? = null,
 
-    @XmlElement(true)
-    @XmlSerialName("parent")
-    val parent: Parent?,
+    @field:Element(name = "artifactId", required = false)
+    var artifactId: String? = null,
 
-    @XmlElement(true)
-    @XmlSerialName("properties")
-    val properties: Properties? = null
+    @field:Element(name = "version", required = false)
+    var version: String? = null,
+
+    @field:Element(name = "packaging", required = false)
+    var packaging: String? = null,
+
+    @field:Element(name = "dependencies", required = false)
+    var dependencies: Dependencies? = null,
+
+    @field:Element(name = "dependencyManagement", required = false)
+    var dependencyManagement: DependencyManagement? = null,
+
+    @field:Element(name = "parent", required = false)
+    var parent: Parent? = null,
+
+
+    @field:Element(name = "properties", required = false)
+    var properties: Properties? = null
 )
 
-@Serializable(with = MavenPomPropertiesXmlSerializer::class)
+@Root(name = "properties", strict = false)
+@Convert(PropertiesConverter::class)
 internal data class Properties(
-    val entries: Map<String, String>? = null
+    var entries: Map<String, String>? = null
 )
 
-@Serializable
+@Root(name = "parent", strict = false)
 internal data class Parent(
-    @XmlElement(true)
-    @XmlSerialName("groupId")
-    val groupId: String,
-    @XmlElement(true)
-    @XmlSerialName("artifactId")
-    val artifactId: String,
-    @XmlElement(true)
-    @XmlSerialName("version")
-    val version: String
+
+    @field:Element(name = "groupId", required = false)
+    var groupId: String? = null,
+
+    @field:Element(name = "artifactId", required = false)
+    var artifactId: String? = null,
+
+    @field:Element(name = "version", required = false)
+    var version: String? = null
 )
 
-@Serializable
+@Root(name = "dependencyManagement", strict = false)
 internal data class DependencyManagement(
-    @XmlElement(true)
-    @XmlSerialName("dependencies")
-    val dependencies: Dependencies?
+
+    @field:Element(name = "dependencies", required = false)
+    var dependencies: Dependencies? = null
 )
 
-
-@Serializable
+@Root(name = "dependencies", strict = false)
 internal data class Dependencies(
-    @XmlElement(true)
-    @XmlSerialName("dependency")
-    val dependency: List<Dependency>
+
+    @field:ElementList(entry = "dependency", inline = true, required = false)
+    var dependency: List<Dependency> = mutableListOf()
 )
 
-@Serializable
+@Root(name = "dependency", strict = false)
 internal data class Dependency(
-    @XmlElement(true)
-    @XmlSerialName("groupId")
-    val groupId: String,
-    @XmlElement(true)
-    @XmlSerialName("artifactId")
-    val artifactId: String,
-    @XmlElement(true)
-    @XmlSerialName("version")
-    val version: String?,
-    @XmlElement(true)
-    @XmlSerialName("scope")
-    val scope: String?
+
+    @field:Element(name = "groupId")
+    var groupId: String? = null,
+
+    @field:Element(name = "artifactId")
+    var artifactId: String? = null,
+
+    @field:Element(name = "version", required = false)
+    var version: String? = null,
+
+    @field:Element(name = "scope", required = false)
+    var scope: String? = null
 )

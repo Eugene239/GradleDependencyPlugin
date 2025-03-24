@@ -20,6 +20,9 @@ internal data class RepositoryAuthorization(
 )
 
 internal fun MavenArtifactRepository.toRepository(): Repository {
+//    val includedConfiguration = (this as? DefaultMavenArtifactRepository)?.repositoryDescriptorCopy?.includedConfigurations
+//    val excludedConfiguration = (this as? DefaultMavenArtifactRepository)?.repositoryDescriptorCopy?.excludedConfigurations
+//    println("$name, $url, included: $includedConfiguration, excluded: $excludedConfiguration, ${this::class.java}")
     return Repository(
         url = url.toString(),
         name = name,

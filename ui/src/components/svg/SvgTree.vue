@@ -31,7 +31,7 @@ export default {
       linesData: [],
       // node list with hidden children
       hidden: [],
-      betweenSize: 30,
+      betweenSize: 40,
       height: null,
       width: window.screen.width,
       viewBox: "0 0 " + window.screen.width + " 0"
@@ -51,8 +51,8 @@ export default {
     },
 
     positionNodes(node, x, y, parentStep, level = 0) {
-      node.x = x;
-      node.y = y;
+      node.x = x.toString();
+      node.y = y.toString();
       node.id = crypto.randomUUID();
 
       this.treeData.push(node);
@@ -71,10 +71,10 @@ export default {
         const childY = y - parentStep / 2 + offsets.reduce((sum, a) => sum + a, 0) + (multiple * parentStep) / 2
         this.linesData.push({
           id: crypto.randomUUID(),
-          x1: x,
-          y1: y,
-          x2: childX,
-          y2: childY,
+          x1: x.toString(),
+          y1: y.toString(),
+          x2: childX.toString(),
+          y2: childY.toString(),
         })
         this.positionNodes(child, childX, childY, childHeight, level + 1);
         offsets.push(childHeight);

@@ -3,9 +3,8 @@ package io.github.eugene239.gradle.plugin.dependency.internal.usecase
 import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.children.ChildrenCache
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.pom.PomCache
-import io.github.eugene239.gradle.plugin.dependency.internal.cache.repository.RepositoryCache
+import io.github.eugene239.gradle.plugin.dependency.internal.cache.repository.RepositoryByNameCache
 import io.github.eugene239.gradle.plugin.dependency.internal.provider.DefaultRepositoryProvider
-import io.github.eugene239.gradle.plugin.dependency.internal.service.DefaultMavenService
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenService
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -15,11 +14,8 @@ internal class SingleDependencyUseCase(
     private val logger: Logger,
     private val repositoryProvider: DefaultRepositoryProvider,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val mavenService: MavenService = DefaultMavenService(
-        repositoryProvider = repositoryProvider,
-        logger = logger
-    ),
-    private val repositoryCache: RepositoryCache = RepositoryCache(
+    private val mavenService: MavenService,
+    private val repositoryCache: RepositoryByNameCache = RepositoryByNameCache(
         repositoryProvider = repositoryProvider,
         mavenService = mavenService,
         ioDispatcher = ioDispatcher
@@ -28,9 +24,7 @@ internal class SingleDependencyUseCase(
         mavenService = mavenService,
         repositoryCache = repositoryCache
     ),
-    private val childrenCache: ChildrenCache = ChildrenCache(
-        pomCache = pomCache
-    )
+    private val childrenCache: ChildrenCache = ChildrenCache(pomCache = pomCache)
 ) : UseCase<SingleDependencyUseCaseParams, Unit> {
 
     override suspend fun execute(params: SingleDependencyUseCaseParams) {
@@ -39,7 +33,7 @@ internal class SingleDependencyUseCase(
 
     private suspend fun processDependency(libKey: LibKey) {
         logger.info("processDependency: $libKey")
-        val children = childrenCache.get(libKey)
+        val children = childrenCache.get(libKey, "") // TODO
         children.onSuccess {
             logger.info("$libKey")
             it.forEach { child ->
