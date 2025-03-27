@@ -10,7 +10,7 @@ object LibVersions {
         return if (isRelease(project)) "$major.$minor.$patch" else "$major.$minor.$patch-${getHash()}-SNAPSHOT"
     }
 
-    private fun isRelease(project: Project): Boolean {
+    fun isRelease(project: Project): Boolean {
         return project.properties["IS_RELEASE"] == "true"
     }
 }
