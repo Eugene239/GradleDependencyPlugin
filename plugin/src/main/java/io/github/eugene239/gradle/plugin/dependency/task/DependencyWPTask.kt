@@ -5,6 +5,7 @@ import io.github.eugene239.gradle.plugin.dependency.internal.StartupFlags
 import io.github.eugene239.gradle.plugin.dependency.internal.filter.DependencyFilter
 import io.github.eugene239.gradle.plugin.dependency.internal.filteredConfigurations
 import io.github.eugene239.gradle.plugin.dependency.internal.provider.DefaultRepositoryProvider
+import io.github.eugene239.gradle.plugin.dependency.internal.server.PluginHttpServer
 import io.github.eugene239.gradle.plugin.dependency.internal.service.DefaultMavenService
 import io.github.eugene239.gradle.plugin.dependency.internal.usecase.GraphUseCase
 import io.github.eugene239.gradle.plugin.dependency.internal.usecase.GraphUseCaseParams
@@ -12,8 +13,9 @@ import kotlinx.coroutines.Dispatchers
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.options.Option
 import java.io.File
+import java.util.concurrent.Executors
 
-abstract class DependencyGraphTask : BaseTask() {
+abstract class DependencyWPTask : BaseTask() {
 
     @Input
     @Option(option = "filter", description = "Regex filter for dependencies")
@@ -31,10 +33,21 @@ abstract class DependencyGraphTask : BaseTask() {
     @Option(option = "connection-timeout", description = "Ktor client connection timeout")
     var connectionTimeout: String = "$DEFAULT_CONNECTION_TIMEOUT"
 
+    @Input
+    @Option(option = "http-port", description = "Http server port")
+    var httpPort: String = ""
+
 
     private val rootDir = File("${project.layout.buildDirectory.asFile.get()}${File.separator}$OUTPUT_PATH")
     private val logger = project.logger
     private val dependencyFilter = DependencyFilter(rootProjectName = project.rootProject.name)
+    private val executor = Executors.newFixedThreadPool(5)
+    private val server: PluginHttpServer = PluginHttpServer(
+        logger = logger,
+        rootDir = rootDir,
+        executorService = executor
+    )
+
     private val repositoryProvider = DefaultRepositoryProvider(
         project = project,
         logger = logger,
@@ -69,12 +82,12 @@ abstract class DependencyGraphTask : BaseTask() {
             dependencyFilter.setRegex(Regex(filter))
         }
 
-        val result = useCase.execute(
+        useCase.execute(
             GraphUseCaseParams(
                 configurations = configurations,
                 startupFlags = StartupFlags(),
             )
         )
-        logger.lifecycle("Site in file://${result.path}")
+        server.start(port = httpPort.toIntOrNull())
     }
 }

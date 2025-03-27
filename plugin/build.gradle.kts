@@ -57,6 +57,7 @@ publishing {
 
 buildConfig {
     buildConfigField("String", "PLUGIN_VERSION", "\"${libraryVersion}\"")
+    buildConfigField("Boolean", "IS_DEBUG", LibVersions.isRelease(project).not())
 }
 
 java {
@@ -77,7 +78,7 @@ gradlePlugin {
             displayName = "Gralde Dependency plugin"
             description = "View project dependecy tree"
             @Suppress("UnstableApiUsage")
-            tags.set(listOf("graph", "dependencies"))
+            tags.set(listOf("graph", "dependencies", "conflicts", "report"))
         }
     }
 }
