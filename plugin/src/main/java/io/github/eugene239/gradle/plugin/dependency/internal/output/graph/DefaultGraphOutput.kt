@@ -1,10 +1,9 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.output.graph
 
-import io.github.eugene239.gradle.plugin.dependency.internal.LibIdentifier
-import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.FlatDependencies
+import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
+import io.github.eugene239.gradle.plugin.dependency.internal.LibVersions
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.PluginConfiguration
-import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.TopDependencies
-import io.github.eugene239.gradle.plugin.dependency.internal.Versions
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.ConfigurationResult
 import io.github.eugene239.gradle.plugin.dependency.internal.ui.UiSaver
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
@@ -22,14 +21,14 @@ internal class DefaultGraphOutput(
 
     override fun save(
         pluginConfiguration: PluginConfiguration,
-        flatDependencies: FlatDependencies,
-        topDependencies: TopDependencies,
-        libVersions: Map<String, Map<LibIdentifier, Versions>>
+        results: Collection<ConfigurationResult>
     ): File {
         savePluginConfiguration(pluginConfiguration)
-        saveFlatDependencies(flatDependencies)
-        saveTopDependencies(topDependencies)
-        saveLibVersions(libVersions)
+        results.forEach {
+            saveFlatDependencies(it.configuration, it.flatDependencies)
+            saveTopDependencies(it.configuration, it.topDependencies)
+            saveLibVersions(it.configuration, it.versions)
+        }
         return uiSaver.save(rootDir)
     }
 
@@ -40,36 +39,36 @@ internal class DefaultGraphOutput(
         file.writeText(json)
     }
 
-    private fun saveFlatDependencies(flatDependencies: FlatDependencies) {
-        val data = flatDependencies.getData()
-        val jsonElement = prettyEncoder.encodeToJsonElement(data)
+    private fun saveFlatDependencies(configuration: String, flatDependencies: Map<LibKey, Set<LibKey>>) {
+        val dir = File(rootDir, configuration)
+        dir.mkdirs()
+        val jsonElement = prettyEncoder.encodeToJsonElement(
+            flatDependencies
+                .mapKeys { it.key.toString() }
+                .mapValues { it.value.map { item -> item.toString() } }
+        )
         val json = prettyEncoder.encodeToString(jsonElement)
-        val file = File(rootDir, "flat-dependencies.json")
+        val file = File(dir, "flat-dependencies.json")
         file.createNewFile()
         file.writeText(json)
     }
 
-    private fun saveTopDependencies(topDependencies: TopDependencies) {
-        topDependencies.getData().forEach { (configuration, dependencies) ->
-            val dir = File(rootDir, configuration)
-            dir.mkdirs()
-            val file = File(dir, "top-dependencies.json")
-            file.createNewFile()
-            val json = prettyEncoder.encodeToString(dependencies.sorted())
-            file.writeText(json)
-        }
+    private fun saveTopDependencies(configuration: String, topDependencies: Set<LibKey>) {
+        val dir = File(rootDir, configuration)
+        dir.mkdirs()
+        val file = File(dir, "top-dependencies.json")
+        file.createNewFile()
+        val json = prettyEncoder.encodeToString(topDependencies.map { it.toString() }.sorted())
+        file.writeText(json)
     }
 
-    private fun saveLibVersions(confToLibVersions: Map<String, Map<LibIdentifier, Versions>>) {
-        confToLibVersions.forEach { (configuration, conflicts) ->
-            val dir = File(rootDir, configuration)
-            dir.mkdirs()
-
-            val data = conflicts.mapKeys { entry -> entry.key.toString() }
-            val json = prettyEncoder.encodeToString(data)
-            val file = File(dir, "conflicts.json")
-            file.createNewFile()
-            file.writeText(json)
-        }
+    private fun saveLibVersions(configuration: String, libVersions: LibVersions) {
+        val dir = File(rootDir, configuration)
+        dir.mkdirs()
+        val data = libVersions.getConflictData().mapKeys { entry -> entry.key.toString() }
+        val json = prettyEncoder.encodeToString(data)
+        val file = File(dir, "conflicts.json")
+        file.createNewFile()
+        file.writeText(json)
     }
 }
