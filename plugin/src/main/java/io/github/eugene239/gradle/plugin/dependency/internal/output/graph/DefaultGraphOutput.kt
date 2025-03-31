@@ -1,5 +1,6 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.output.graph
 
+import io.github.eugene239.gradle.plugin.dependency.internal.LibIdentifier
 import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.LibVersions
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.PluginConfiguration
@@ -21,13 +22,21 @@ internal class DefaultGraphOutput(
 
     override fun save(
         pluginConfiguration: PluginConfiguration,
-        results: Collection<ConfigurationResult>
+        results: Collection<ConfigurationResult>,
+        latestVersions: Map<LibIdentifier, String>?,
+        libSizes: Map<LibKey, Long>?
     ): File {
         savePluginConfiguration(pluginConfiguration)
         results.forEach {
             saveFlatDependencies(it.configuration, it.flatDependencies)
             saveTopDependencies(it.configuration, it.topDependencies)
             saveLibVersions(it.configuration, it.versions)
+        }
+        latestVersions?.let {
+            saveLatestVersions(it)
+        }
+        libSizes?.let {
+            saveLibSizes(it)
         }
         return uiSaver.save(rootDir)
     }
@@ -71,4 +80,21 @@ internal class DefaultGraphOutput(
         file.createNewFile()
         file.writeText(json)
     }
+
+    private fun saveLatestVersions(latest: Map<LibIdentifier, String>) {
+        val data = latest.mapKeys { entry-> entry.key.toString() }
+        val json = prettyEncoder.encodeToString(data)
+        val file = File(rootDir, "latest-versions.json")
+        file.createNewFile()
+        file.writeText(json)
+    }
+
+    private fun saveLibSizes(libSizes: Map<LibKey, Long>) {
+        val data = libSizes.mapKeys { entry-> entry.key.toString() }
+        val json = prettyEncoder.encodeToString(data)
+        val file = File(rootDir, "lib-sizes.json")
+        file.createNewFile()
+        file.writeText(json)
+    }
+
 }

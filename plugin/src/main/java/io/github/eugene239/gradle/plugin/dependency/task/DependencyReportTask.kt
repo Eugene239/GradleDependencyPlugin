@@ -44,7 +44,10 @@ abstract class DependencyReportTask : BaseTask() {
             repositoryProvider = repositoryProvider,
             timeoutMillis = connectionTimeout.toLongOrNull() ?: DEFAULT_CONNECTION_TIMEOUT
         ),
-
+        isSubmodule = { dependency ->
+            val group = dependency.selected.moduleVersion?.group
+            project.rootProject.name.equals(group, true)
+        },
         ioDispatcher = Dispatchers.IO
     )
 

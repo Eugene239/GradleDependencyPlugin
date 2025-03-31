@@ -37,6 +37,14 @@ abstract class DependencyWPTask : BaseTask() {
     @Option(option = "http-port", description = "Http server port")
     var httpPort: String = ""
 
+    @Input
+    @Option(option = "fetch-dependencies-size", description = "Flag to fetch top dependencies size")
+    var fetchSize: String = ""
+
+    @Input
+    @Option(option = "fetch-latest-versions", description = "Flag to fetch top dependencies latest versions")
+    var fetchLatestVersions: String = ""
+
 
     private val rootDir = File("${project.layout.buildDirectory.asFile.get()}${File.separator}$OUTPUT_PATH")
     private val logger = project.logger
@@ -85,7 +93,10 @@ abstract class DependencyWPTask : BaseTask() {
         useCase.execute(
             GraphUseCaseParams(
                 configurations = configurations,
-                startupFlags = StartupFlags(),
+                startupFlags = StartupFlags(
+                    fetchVersions = fetchLatestVersions.toBoolean(),
+                    fetchLibSize = fetchSize.toBoolean()
+                ),
             )
         )
         server.start(port = httpPort.toIntOrNull())

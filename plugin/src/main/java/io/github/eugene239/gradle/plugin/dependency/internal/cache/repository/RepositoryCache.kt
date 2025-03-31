@@ -2,7 +2,6 @@ package io.github.eugene239.gradle.plugin.dependency.internal.cache.repository
 
 import io.github.eugene239.gradle.plugin.dependency.internal.LibIdentifier
 import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
-import io.github.eugene239.gradle.plugin.dependency.internal.cache.Cache
 import io.github.eugene239.gradle.plugin.dependency.internal.containsVersion
 import io.github.eugene239.gradle.plugin.dependency.internal.exception.RepositoryException
 import io.github.eugene239.gradle.plugin.dependency.internal.provider.RepositoryProvider
@@ -24,12 +23,12 @@ internal class RepositoryCache(
     private val repositoryProvider: RepositoryProvider,
     private val mavenService: MavenService,
     private val ioDispatcher: CoroutineDispatcher
-) : Cache<LibKey, Result<Repository>> {
+) {
 
     private val cache = ConcurrentMap<LibIdentifier, HashMap<Repository, MavenMetadata>>()
     private val counter = ConcurrentHashMap<Repository, AtomicInteger>()
 
-    override suspend fun get(key: LibKey): Result<Repository> {
+    suspend fun get(key: LibKey): Result<Repository> {
         cache[key.toIdentifier()]?.let { map ->
             map.firstNotNullOfOrNull { entry ->
                 if (entry.value.containsVersion(key)) {

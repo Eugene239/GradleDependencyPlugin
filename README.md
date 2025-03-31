@@ -34,10 +34,17 @@ Cancel task to stop httpServer
 
 ## CLI parameters
 
-| Parameter                   | Details                                       | Example                      | Default            | 
-|-----------------------------|-----------------------------------------------|------------------------------|--------------------|
-| filter                      | Regex string to filter dependencies by name   | io\\.github\\.eugene239.*    |                    |
-| configuration               | Name of configuration to launch task          | defaultDebugRuntimeClasspath |                    |
-| repository-connection-limit | Limit of requests to maven repository at once | 10                           | 20                 |
-| connection-timeout          | Ktor client connection timeout millis         | 10000                        | 10000              |
-| http-port                   | Http port for server                          | 8080                         | Random unused port |  
+| Parameter                   | Details                                                 | dependencyWP | dependencyReport | Example                      | Default            | 
+|-----------------------------|---------------------------------------------------------|--------------|------------------|------------------------------|--------------------|
+| filter                      | Regex string to filter dependencies by name             | &check;      | &check;          | io\\.github\\.eugene239.*    |                    |
+| configuration               | Name of configuration to launch task                    | &check;      | &check;          | defaultDebugRuntimeClasspath |                    |
+| repository-connection-limit | Limit of requests to maven repository at once           | &check;      | &check;          | 10                           | 20                 |
+| connection-timeout          | Ktor client connection timeout millis                   | &check;      | &check;          | 10000                        | 10000              |
+| http-port                   | Http port for server                                    | &check;      | &cross;          | 8080                         | Random unused port |  
+| fetch-dependencies-size     | Boolean flag to fetch dependencies size in bytes        | &check;      | &cross;          | true                         | false              |
+| fetch-latest-versions       | Boolean flag to fetch from repositories latest versions | &check;      | &cross;          | true                         | false              |
+
+Example of running dependencyWP with all parameter
+```shell
+gradle app:dependencyWP --filter=io\.github\.eugene239.* --configuration=runtimeClasspath --repository-connection-limit=10  --connection-timeout=30000 --http-port=8080 --fetch-dependencies-size=true --fetch-latest-versions=true 
+```
