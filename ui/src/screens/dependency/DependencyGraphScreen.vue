@@ -15,6 +15,10 @@ export default {
       type: String,
       required: true,
     },
+    isSubmodule: {
+      type: Boolean,
+      required: true,
+    }
   },
   watch: {
     dependency: function (newValue) {
@@ -27,9 +31,10 @@ export default {
     }
   },
   created() {
-    this.fetchData();
+
   },
   mounted() {
+    this.fetchData();
   },
   setup() {
     const cache = inject("flatDependenciesCache");

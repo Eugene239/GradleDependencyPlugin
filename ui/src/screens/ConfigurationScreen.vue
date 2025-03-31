@@ -2,6 +2,8 @@
 import {useRoute} from "vue-router";
 import router from "@/router.js";
 import {Navigator} from "@/navigation/Navigator.js";
+import {flatDependenciesCache} from "@/cache/flatDependenciesCache.js";
+import {inject} from "vue";
 
 export default {
   methods: {
@@ -10,11 +12,24 @@ export default {
     },
     navigateToConflicts() {
       Navigator.navigateToConflicts(this.configurationName);
+    },
+    async fetchData() {
+      this.cache.loadInitialCache(this.configurationName);
     }
   },
   data() {
     return {
       configurationName: useRoute().params.configuration
+    }
+  },
+  mounted() {
+    console.log("Configuration screen Component mounted.");
+    this.fetchData();
+  },
+  setup() {
+    const cache = inject("flatDependenciesCache");
+    return {
+      cache
     }
   },
 }

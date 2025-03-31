@@ -25,7 +25,6 @@ export default {
   methods: {
     async loadCaches() {
        await configurationsCache.loadInitialCache();
-       await flatDependenciesCache.loadInitialCache();
     }
   }
 }

@@ -4,8 +4,10 @@ import {Api} from "@/api/Api.js";
 export const flatDependenciesCache = reactive({
     data: {},
 
-    async loadInitialCache() {
-        this.data = await Api.flatDependencies();
+    async loadInitialCache(configuration) {
+        console.log("start loadInitialCache for", configuration);
+        this.data = await Api.flatDependencies(configuration);
+        console.log("loaded loadInitialCache for", configuration, this.data);
     },
 
     //@Deprecated("Used only for old graph")
@@ -69,13 +71,31 @@ export const flatDependenciesCache = reactive({
         return result;
     },
 
-    async getGraphData(topDependencies, dependencyName) {
+    async getGraphData(topDependencies, dependencyName, isSubmodule) {
         //console.log("getGraphData", dependencyName, topDependencies);
+        let allNodes = new Set();
         let result = topDependencies
             .filter(lib => this.hasSelectedDependency(lib, dependencyName))
-            .map(dep => this.makeGraphNode(dep, dependencyName, 100))
+            .filter(dep => {
+                console.log("filterByAllNodes", dep, !allNodes.has(dep));
+                return !allNodes.has(dep)
+            })
+            .map(dep => {
+                let node = this.makeGraphNode(dep, dependencyName, 100)
+                this.addAllChildren(allNodes, node);
+                return node;
+            })
         //console.log("result: ", result);
         return result
+    },
+
+    addAllChildren(set, node) {
+        console.log("addAllChildren", node, set);
+        set.add(node.name);
+        let children = node.children ? node.children : [];
+        children.forEach((item) => {
+            this.addAllChildren(set, item);
+        });
     },
 
     makeGraphNode(library, selectedLibrary, limit) {
@@ -107,7 +127,7 @@ export const flatDependenciesCache = reactive({
         let dependencies = this.data[lib] || []
         let result = dependencies
             .filter(child => this.hasSelectedDependency(child, selectedLibrary, parent));
-            //.filter(async child => this.hasSelectedDependency(child, selectedLibrary, parent));
+        //.filter(async child => this.hasSelectedDependency(child, selectedLibrary, parent));
         return result.length > 0;
     }
 

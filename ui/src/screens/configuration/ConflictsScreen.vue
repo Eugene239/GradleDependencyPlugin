@@ -20,7 +20,7 @@ export default {
   },
   name: "ConflictsScreen",
   mounted() {
-    console.log("Component mounted.", this.configuration);
+    console.log("ConflictsScreen component mounted.", this.configuration);
     this.fetchData()
   },
   watch: {
