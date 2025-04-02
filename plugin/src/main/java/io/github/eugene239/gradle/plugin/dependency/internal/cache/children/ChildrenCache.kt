@@ -47,7 +47,7 @@ internal class ChildrenCache(
                         }.onFailure {
                             when (it) {
                                 is DependencyException.VersionNotFoundException -> {
-                                    logger.warn("Can't find version for $libKey", it)
+                                    logger.warn("Can't find version for $libKey, in repository: $repositoryName", it)
                                 }
 
                                 else -> throw it
@@ -59,7 +59,7 @@ internal class ChildrenCache(
         }.onFailure {
             when (it) {
                 is PomException.PomNotFoundException -> {
-                    logger.warn("Pom not found for $libKey", it)
+                    logger.warn("Pom not found for $libKey, in $repositoryName", it)
                     return emptyList()
                 }
 

@@ -9,12 +9,11 @@ export const Navigator = {
         console.log("Navigator navigateToConfiguration", name);
         return router.push(`/configurations/${name}`)
     },
-
-    navigateToDependency(configuration, dependency) {
-        console.log("Navigator navigateToDependency", configuration, dependency);
-        return router.push(`/configurations/${configuration}/dependencies/${dependency}`);
+    navigateToModules(configuration) {
+        if (!router.currentRoute.value.path.endsWith('modules')) {
+            return router.push(`/configurations/${configuration}/modules`);
+        }
     },
-
     navigateToDependencies(configuration) {
         if (!router.currentRoute.value.path.endsWith('dependencies')) {
             return router.push(`/configurations/${configuration}/dependencies`);
@@ -24,6 +23,12 @@ export const Navigator = {
         if (!router.currentRoute.value.path.endsWith('conflicts')) {
             return router.push(`/configurations/${configuration}/conflicts`);
         }
+    },
+
+    // Dependencies
+    navigateToDependency(configuration, dependency) {
+        console.log("Navigator navigateToDependency", configuration, dependency);
+        return router.push(`/configurations/${configuration}/dependencies/${dependency}`);
     },
     navigateToUsage(configuration, dependency) {
         if (!router.currentRoute.value.path.endsWith('usage')) {
@@ -40,7 +45,8 @@ export const Navigator = {
             return router.push(`/configurations/${configuration}/dependencies/${dependency}/dependencies`);
         }
     },
-    back(){
+
+    back() {
         return router.back();
     }
 }

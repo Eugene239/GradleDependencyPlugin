@@ -92,14 +92,15 @@ internal class DefaultMavenService(
 
     override suspend fun getSize(libKey: LibKey, repository: Repository, packaging: String): Long {
         val urlPath = "${libKey.group.replace('.', '/')}/${libKey.module}/${libKey.version}/${libKey.module}-${libKey.version}.$packaging"
+        val url = "${repository.url.removeSuffix("/")}/$urlPath"
         val head = repository.withPermit {
-            client.head(URL("${repository.url.removeSuffix("/")}/$urlPath")) {
+            client.head(URL(url)) {
                 repository.authorization?.let {
                     headers.appendAll(it.toStringValues())
                 }
             }
         }
-        return head.headers["Content-Length"]?.toLongOrNull() ?: throw Exception("Can't get size for $libKey in repository: $repository with packaging: $packaging, $urlPath")
+        return head.headers["Content-Length"]?.toLongOrNull() ?: throw Exception("Can't get size for $libKey in repository: $repository with packaging: $packaging, $url")
     }
 
     private fun getMetadataUrl(libIdentifier: LibIdentifier, repository: Repository): String {

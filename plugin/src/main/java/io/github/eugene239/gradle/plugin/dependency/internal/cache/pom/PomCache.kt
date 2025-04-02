@@ -2,7 +2,7 @@ package io.github.eugene239.gradle.plugin.dependency.internal.cache.pom
 
 import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.repository.RepositoryByNameCache
-import io.github.eugene239.gradle.plugin.dependency.internal.rethrowCancellationException
+import io.github.eugene239.gradle.plugin.dependency.internal.coRunCatching
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenService
 import io.github.eugene239.gradle.plugin.dependency.internal.service.Pom
 import io.github.eugene239.gradle.plugin.dependency.internal.service.Repository
@@ -23,9 +23,12 @@ internal class PomCache(
         }
 
         logger.debug("PomCache missed $key")
-        val repository = repositoryCache.get(key, repositoryName)
-
-        cache[key] = kotlin.runCatching { getPom(key, repository) }.rethrowCancellationException()
+        val repositoryResult = coRunCatching { repositoryCache.get(key, repositoryName) }
+        repositoryResult.onSuccess { repository ->
+            cache[key] = coRunCatching { getPom(key, repository) }
+        }.onFailure {
+            cache[key] = Result.failure(it)
+        }
 
         return cache[key]!!
     }

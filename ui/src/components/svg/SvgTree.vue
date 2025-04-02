@@ -107,19 +107,19 @@ export default {
 </script>
 
 <template>
-  <svg v-if="width!=null" :width="width" :height="height" :viewBox="viewBox" class="media tree-svg">
-    <SvgLine v-for="line in linesData" :y2="line.y2" :x2="line.x2" :y1="line.y1" :x1="line.x1"
-             :key="line.id"
-    />
-    <SvgDependency
-        v-for="dep in treeData" :x="dep.x" :y="dep.y"
-        :key="dep.id"
-        :name="dep.name"
-        :color="dep.children? DEPENDENCY.HAVE_CHILD : DEPENDENCY.NO_CHILD"
-        :class="dep.children? 'is-clickable' : ''"
-        @click="dep.children? this.onClick(dep): {}"
-    />
-  </svg>
+    <svg v-if="width!=null" :width="width" :height="height" :viewBox="viewBox" class="media tree-svg">
+      <SvgLine v-for="line in linesData" :y2="line.y2" :x2="line.x2" :y1="line.y1" :x1="line.x1"
+               :key="line.id"
+      />
+      <SvgDependency
+          v-for="dep in treeData" :x="dep.x" :y="dep.y"
+          :key="dep.id"
+          :name="dep.name"
+          :color="dep.children? DEPENDENCY.HAVE_CHILD : DEPENDENCY.NO_CHILD"
+          :class="dep.children? 'is-clickable' : ''"
+          @click="dep.children? this.onClick(dep): {}"
+      />
+    </svg>
 </template>
 
 <style scoped>

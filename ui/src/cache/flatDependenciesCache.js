@@ -1,40 +1,17 @@
 import {reactive} from 'vue';
 import {Api} from "@/api/Api.js";
+import {SubmoduleGraph} from "@/graph/SubmoduleGraph.js";
+import {DependencyGraph} from "@/graph/DependencyGraph.js";
 
 export const flatDependenciesCache = reactive({
     data: {},
+    configuration: null,
 
-    async loadInitialCache() {
-        this.data = await Api.flatDependencies();
-    },
-
-    //@Deprecated("Used only for old graph")
-    getDependencies(configuration, topDependencies) {
-        return topDependencies.map(dep => {
-            return this.makeNode(dep, 4);
-        });
-    },
-
-    // @Deprecated("Used only for old graph")
-    makeNode(library, limit) {
-        let childrenDependencies = null;
-        if (limit > 0) {
-            childrenDependencies = this.data[library] ? this.data[library]?.map(lib => this.makeNode(lib, limit - 1)) : null
-        } else {
-            childrenDependencies = null;
+    async loadInitialCache(configuration) {
+        if (this.configuration !== configuration || Object.keys(this.data).length === 0) {
+            this.configuration = configuration;
+            this.data = await Api.flatDependencies(configuration);
         }
-        if (childrenDependencies && childrenDependencies.length === 0) {
-            childrenDependencies = null;
-        }
-        return {
-            name: library,
-            children: childrenDependencies
-        }
-    },
-
-    // @Deprecated("Used only for old graph")
-    loadChildren(libName) {
-        return this.data[libName] ? this.data[libName]?.map(lib => this.makeNode(lib, 1)) : null;
     },
 
     async getUsage(libName) {
@@ -69,46 +46,50 @@ export const flatDependenciesCache = reactive({
         return result;
     },
 
-    async getGraphData(topDependencies, dependencyName) {
-        //console.log("getGraphData", dependencyName, topDependencies);
-        let result = topDependencies
-            .filter(lib => this.hasSelectedDependency(lib, dependencyName))
-            .map(dep => this.makeGraphNode(dep, dependencyName, 100))
-        //console.log("result: ", result);
-        return result
+    async getGraphData(configuration, topDependencies, dependencyName) {
+        await this.loadInitialCache(configuration)
+        let builder = this.isSubmodule(dependencyName)
+            ? new SubmoduleGraph(this.data, topDependencies, dependencyName, this)
+            : new DependencyGraph(this.data, topDependencies, dependencyName, this);
+        return await builder.getGraphData()
     },
 
-    makeGraphNode(library, selectedLibrary, limit) {
-        let childrenDependencies = null;
-        if (limit > 0) {
-            childrenDependencies = this.data[library] ? this.data[library]
-                    ?.map(lib => this.makeGraphNode(lib, selectedLibrary, limit - 1))
-                    ?.filter(lib => this.hasSelectedDependency(lib.name, selectedLibrary))
-                : null
-        } else {
-            childrenDependencies = null;
-        }
-        if (childrenDependencies && childrenDependencies.length === 0) {
-            childrenDependencies = null;
-        }
-        return {
-            name: library,
-            children: childrenDependencies
-        }
+
+    addAllChildren(set, node) {
+        set.add(node.name);
+        let children = node.children ? node.children : [];
+        children.forEach((item) => {
+            this.addAllChildren(set, item);
+        });
     },
 
-    hasSelectedDependency(lib, selectedLibrary, parent) {
-        if (typeof lib !== "string") {
+
+    isSubmodule(dependencyName) {
+        if (dependencyName.split(":").length === 3) {
+            let version = dependencyName.split(":")[2]
+            if (version === "unspecified") {
+                return true
+            }
+        }
+        let dependencies = Object.entries(this.data).filter(([key, value]) => {
+            let name = key.split(":", 2).join(":")
+            if (name === dependencyName) {
+                let version = key.split(":")[2]
+                if (version === "unspecified") {
+                    return true
+                }
+            }
             return false;
-        }
-        if (lib.includes(selectedLibrary)) {
-            return true
-        }
-        let dependencies = this.data[lib] || []
-        let result = dependencies
-            .filter(child => this.hasSelectedDependency(child, selectedLibrary, parent));
-            //.filter(async child => this.hasSelectedDependency(child, selectedLibrary, parent));
-        return result.length > 0;
+        });
+        return dependencies.length > 0;
+    },
+
+    hasModules() {
+        let dependencies = Object.entries(this.data).filter(([key, value]) => {
+            let version = key.split(":")[2]
+            return version === "unspecified";
+        });
+        return dependencies.length > 0;
     }
 
 })

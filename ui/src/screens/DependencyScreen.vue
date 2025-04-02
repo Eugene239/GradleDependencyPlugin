@@ -15,6 +15,9 @@ export default {
     dependency: function (newVal) {
       console.log("DependencyScreen newVal", newVal);
     },
+    configurationName: function (newVal) {
+      console.log("DependencyScreen configurationName", newVal);
+    }
   },
   methods: {
     useRoute,

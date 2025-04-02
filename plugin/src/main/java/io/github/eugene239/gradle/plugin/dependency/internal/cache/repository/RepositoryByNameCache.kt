@@ -15,20 +15,29 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.gradle.internal.cc.base.logger
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.jvm.Throws
 
 internal class RepositoryByNameCache(
     private val repositoryProvider: RepositoryProvider,
     private val mavenService: MavenService,
     private val ioDispatcher: CoroutineDispatcher
 ) {
-    // todo make map identifier to set of metadata
     private val cache = ConcurrentHashMap<LibIdentifier, Repository>()
+    private val metadataCache = ConcurrentHashMap<LibIdentifier, Map<Repository, MavenMetadata>>()
 
-
+    @Throws(RepositoryException.MissingRepositoryName::class, RepositoryException.RepositoryWithVersionInMetadataNotFound::class, RepositoryException.RepositoryNotFoundException::class)
     suspend fun get(key: LibKey, repositoryName: String?): Repository {
         if (repositoryName == null) throw RepositoryException.MissingRepositoryName(key)
         cache[key.toIdentifier()]?.let { return it }
         return findRepository(key, repositoryName)
+    }
+
+    suspend fun getMetadataSet(key: LibKey, repositoryName: String): Set<MavenMetadata> {
+        metadataCache[key.toIdentifier()]?.let { hashmap ->
+            return hashmap.map { entry -> entry.value }.toSet()
+        }
+        get(key, repositoryName)
+        return metadataCache[key.toIdentifier()]?.map { entry -> entry.value }?.toSet() ?: emptySet()
     }
 
     private suspend fun findRepository(libKey: LibKey, repositoryName: String): Repository = withContext(ioDispatcher) {
@@ -56,6 +65,8 @@ internal class RepositoryByNameCache(
                     }
                 }
         }
+        metadataCache[libKey.toIdentifier()] = repositoryMetadataMap
+
         val repository = repositoryMetadataMap
             .filter { it.value.containsVersion(libKey) }
             .keys

@@ -4,8 +4,8 @@ export const Api = {
         return await ((await fetch("configurations.json")).json())
     },
 
-    async flatDependencies() {
-        return await ((await fetch("flat-dependencies.json")).json())
+    async flatDependencies(configuration) {
+        return await ((await fetch(`${configuration}/flat-dependencies.json`)).json())
     },
 
     async topDependencies(configuration) {
@@ -14,5 +14,13 @@ export const Api = {
 
     async conflicts(configuration) {
         return await (await fetch(`${configuration}/conflicts.json`)).json();
-    }
+    },
+
+    async latestVersions() {
+        return await ((await fetch(`latest-versions.json`)).json())
+    },
+
+    async libSizes() {
+        return await ((await fetch(`lib-sizes.json`)).json())
+    },
 }

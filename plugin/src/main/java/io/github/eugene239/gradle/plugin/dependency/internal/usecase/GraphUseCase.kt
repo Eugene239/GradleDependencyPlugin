@@ -10,12 +10,14 @@ import io.github.eugene239.gradle.plugin.dependency.internal.exception.Repositor
 import io.github.eugene239.gradle.plugin.dependency.internal.filter.DependencyFilter
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.DefaultGraphOutput
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.GraphOutput
-import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.FlatDependencies
 import io.github.eugene239.gradle.plugin.dependency.internal.LibVersions
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.repository.RepositoryByNameCache
+import io.github.eugene239.gradle.plugin.dependency.internal.cache.size.SizeCache
+import io.github.eugene239.gradle.plugin.dependency.internal.cache.version.LatestVersionCache
+import io.github.eugene239.gradle.plugin.dependency.internal.getLibDetails
+import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.ConfigurationResult
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.PluginConfiguration
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.ProjectConfiguration
-import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.model.TopDependencies
 import io.github.eugene239.gradle.plugin.dependency.internal.provider.DefaultRepositoryProvider
 import io.github.eugene239.gradle.plugin.dependency.internal.rethrowCancellationException
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenService
@@ -61,45 +63,36 @@ internal class GraphUseCase(
     private val childrenCache: ChildrenCache = ChildrenCache(
         pomCache = pomCache
     ),
+    private val latestVersionCache: LatestVersionCache = LatestVersionCache(
+        logger = logger,
+        repositoryCache = repositoryCache
+    ),
+    private val sizeCache: SizeCache = SizeCache(
+        repositoryCache = repositoryCache,
+        mavenService = mavenService,
+        pomCache = pomCache
+    )
 ) : UseCase<GraphUseCaseParams, File> {
 
-    private val map = ConcurrentHashMap<LibKey, List<LibKey>>()
     private val libIdToRepositoryName = HashMap<LibIdentifier, String?>()
 
-    override suspend fun execute(params: GraphUseCaseParams): File {
+    override suspend fun execute(params: GraphUseCaseParams): File = coroutineScope {
         logger.info("Start execution with params: $params")
         rootDir.mkdirs()
 
-        val topDependencies = params.configurations.associateWith { configuration ->
-            configuration.incoming.resolutionResult.root.dependencies
-                .asSequence()
-                .filterIsInstance<ResolvedDependencyResult>()
-                .filter { dependencyFilter.matches(it) }
-                .toSet()
-                .map { dependency -> dependency.toLibDetails(isSubmodule = isSubmodule.invoke(dependency)) }
-                .toSet()
-        }
+        val allTopLibDetails = params.configurations
+            .asSequence()
+            .map { it.getLibDetails(dependencyFilter, isSubmodule) }
+            .flatten()
+            .toSet()
 
-        libIdToRepositoryName.putAll(
-            topDependencies
-                .values
-                .toSet()
-                .flatten()
-                .associate { it.key.toIdentifier() to it.repositoryId }
-        )
+        preProcessDependencies(allTopLibDetails)
 
-        // all dependencies key to fetch information about
-        val identifiers = topDependencies.map { entry -> entry.value }.flatten().map { it.key.toIdentifier() }.toSet()
+        val results = params.configurations.map {
+            async { processConfiguration(it) }
+        }.awaitAll()
 
-        val confToLibVersions = withContext(ioDispatcher) {
-            topDependencies
-                .map { (configuration, libDetails) ->
-                    processConfiguration(configuration, libDetails, identifiers)
-                }
-                .toMap()
-        }
-
-        return output.save(
+        return@coroutineScope output.save(
             pluginConfiguration = PluginConfiguration(
                 configurations = params.configurations.map {
                     ProjectConfiguration(
@@ -110,43 +103,65 @@ internal class GraphUseCase(
                 version = BuildConfig.PLUGIN_VERSION,
                 startupFlags = params.startupFlags
             ),
-            topDependencies = TopDependencies(topDependencies.mapValues { entry -> entry.value.map { it.key }.toSet() }),
-            flatDependencies = FlatDependencies(map),
-            libVersions = confToLibVersions
-                .mapKeys { it.key.name }
-                .mapValues { it.value.getConflictData() }
+            results = results,
+            latestVersions = getLatestVersions(params.startupFlags.fetchVersions, allTopLibDetails),
+            libSizes = getLibSizes(params.startupFlags.fetchLibSize, allTopLibDetails)
         )
     }
 
-    private suspend fun processConfiguration(
-        configuration: Configuration,
-        confDependencies: Set<LibDetails>,
-        identifiers: Set<LibIdentifier>
-    ): Pair<Configuration, LibVersions> {
-        val libVersions = LibVersions()
+    // Fill cache for all dependencies in all configurations
+    private suspend fun preProcessDependencies(allTopLibDetails: Set<LibDetails>) = coroutineScope {
+        val dependencies = allTopLibDetails
+            .filter { it.isSubmodule.not() }
+            .toSet()
 
-        val submodules = confDependencies
+        libIdToRepositoryName.putAll(dependencies.associate { it.key.toIdentifier() to it.repositoryId })
+        val identifiers = dependencies.map { it.key.toIdentifier() }.toSet()
+
+        processDependencies(
+            dependencies = dependencies.map { it.key }.toSet(),
+            identifiers = identifiers,
+            flatDependencies = hashMapOf(),
+            libVersions = LibVersions()
+        )
+    }
+
+    private suspend fun processConfiguration(configuration: Configuration): ConfigurationResult {
+        val libVersions = LibVersions()
+        val topDependencies = configuration.getLibDetails(dependencyFilter, isSubmodule)
+
+        val identifiers = topDependencies.map { it.key.toIdentifier() }.toSet()
+
+        val submodules = topDependencies
             .filter { it.isSubmodule }
             .toSet()
 
-        val dependencies = confDependencies
+        val dependencies = topDependencies
             .filter { it.isSubmodule.not() }
             .map { it.key }
             .toSet()
 
+        val flatDependencies = ConcurrentHashMap<LibKey, Set<LibKey>>()
+
         withContext(ioDispatcher) {
             listOf(
-                async { processDependencies(dependencies, identifiers, libVersions) },
-                async { processSubmodules(submodules, identifiers, libVersions) }
+                async { processDependencies(dependencies, identifiers, flatDependencies, libVersions) },
+                async { processSubmodules(submodules, flatDependencies, identifiers, libVersions) }
             ).awaitAll()
         }
-        return configuration to libVersions
+        return ConfigurationResult(
+            configuration = configuration.name,
+            versions = libVersions,
+            topDependencies = topDependencies.map { it.key }.toSet(),
+            flatDependencies = flatDependencies
+        )
     }
 
     private suspend fun processDependencies(
         dependencies: Set<LibKey>,
         identifiers: Set<LibIdentifier>,
-        libVersions: LibVersions,
+        flatDependencies: MutableMap<LibKey, Set<LibKey>>,
+        libVersions: LibVersions? = null,
         level: Int = 0
     ) {
         val filteredDependencies = dependencies
@@ -162,18 +177,20 @@ internal class GraphUseCase(
                 async {
                     val startTime = System.currentTimeMillis()
                     if (level == 0) {
-                        libVersions.setResolved(dependency.toIdentifier(), dependency.version)
+                        libVersions?.setResolved(dependency.toIdentifier(), dependency.version)
                     }
                     processDependency(
                         libKey = dependency,
+                        flatDependencies,
                         libVersions = libVersions,
                         libIdToRepositoryName[dependency.toIdentifier()]
                     ).rethrowCancellationException()
                         .onSuccess { children ->
                             logger.lifecycle("Processed: $dependency  time: ${System.currentTimeMillis() - startTime} ms")
-                            map[dependency] = children
+                            flatDependencies[dependency] = children
                                 .filter { dependencyFilter.matches(it.toString()) }
                                 .filter { identifiers.contains(it.toIdentifier()) }
+                                .toSet()
                         }
                         .onFailure {
                             when (it) {
@@ -193,19 +210,20 @@ internal class GraphUseCase(
                 .flatten()
                 .toSet()
 
-            processDependencies(subDependencies, identifiers, libVersions, level + 1)
+            processDependencies(subDependencies, identifiers, flatDependencies, libVersions, level + 1)
         }
     }
 
     private suspend fun processSubmodules(
         submodules: Set<LibDetails>,
+        flatDependencies: MutableMap<LibKey, Set<LibKey>>,
         identifiers: Set<LibIdentifier>,
         libVersions: LibVersions
     ) {
         withContext(ioDispatcher) {
             submodules.map {
                 async {
-                    processSubmodule(it, identifiers, libVersions)
+                    processSubmodule(it, flatDependencies, identifiers, libVersions)
                 }
             }.awaitAll()
         }
@@ -213,31 +231,34 @@ internal class GraphUseCase(
 
     private suspend fun processDependency(
         libKey: LibKey,
-        libVersions: LibVersions,
+        flatDependencies: MutableMap<LibKey, Set<LibKey>>,
+        libVersions: LibVersions?,
         repositoryName: String?,
-    ): Result<List<LibKey>> {
+    ): Result<Set<LibKey>> {
         if (libKey.version.isBlank()) {
-            return Result.success(emptyList())
+            return Result.success(emptySet())
         }
         if (repositoryName.isNullOrBlank()) {
             throw Exception("Can't process dependency $libKey, repositoryName is null")
         }
-        libVersions.add(libKey.toIdentifier(), libKey.version)
-        val resolved = map[libKey]
+        libVersions?.add(libKey.toIdentifier(), libKey.version)
+        val resolved = flatDependencies[libKey]
         return if (resolved != null) {
             Result.success(resolved)
         } else {
             childrenCache.get(libKey, repositoryName)
+                .map { it.toSet() }
         }
     }
 
     private suspend fun processSubmodule(
         libDetails: LibDetails,
+        flatDependencies: MutableMap<LibKey, Set<LibKey>>,
         identifiers: Set<LibIdentifier>,
         libVersions: LibVersions
     ) {
         logger.debug("processSubmodule: ${libDetails.key}")
-        if (map[libDetails.key] != null) {
+        if (flatDependencies[libDetails.key] != null) {
             return
         }
         val children = libDetails.result?.dependencies
@@ -245,13 +266,45 @@ internal class GraphUseCase(
             .orEmpty()
 
         val detailsSet = children
-            .filter { child-> dependencyFilter.matches(child) }
+            .filter { child -> dependencyFilter.matches(child) }
             .map { child -> child.toLibDetails(isSubmodule = isSubmodule.invoke(child)) }
             .toSet()
-        map[libDetails.key] = detailsSet.map { it.key }
+        flatDependencies[libDetails.key] = detailsSet.map { it.key }.toSet()
 
-        processSubmodules(detailsSet.filter { it.isSubmodule }.toSet(), identifiers, libVersions)
-        processDependencies(detailsSet.filter { it.isSubmodule.not() }.map { it.key }.toSet(), identifiers, libVersions, 1)
+        processSubmodules(detailsSet.filter { it.isSubmodule }.toSet(), flatDependencies, identifiers, libVersions)
+        processDependencies(detailsSet.filter { it.isSubmodule.not() }.map { it.key }.toSet(), identifiers, flatDependencies, libVersions, 1)
+    }
+
+    private suspend fun getLatestVersions(fetchVersions: Boolean, libs: Set<LibDetails>): Map<LibIdentifier, String>? = coroutineScope {
+        if (fetchVersions.not()) return@coroutineScope null
+        return@coroutineScope libs
+            .filter { it.isSubmodule.not() }
+            .map { details ->
+                async {
+                    details.key.toIdentifier() to latestVersionCache.get(details.key, details.repositoryId!!)?.toString()
+                }
+            }
+            .awaitAll()
+            .toMap()
+            .mapNotNull { (key, value) -> value?.let { key to value } }
+            .toMap()
+    }
+
+    private suspend fun getLibSizes(fetchSize: Boolean, libs: Set<LibDetails>): Map<LibKey, Long>? = coroutineScope {
+        if (fetchSize.not()) return@coroutineScope null
+        return@coroutineScope libs
+            .filter { it.isSubmodule.not() }
+            .map { details ->
+                async {
+                    details.key to sizeCache.getSize(details.key, details.repositoryId!!)
+                        .onFailure { logger.warn("Can't get lib size for ${details.key}", it) }
+                        .getOrNull()
+                }
+            }
+            .awaitAll()
+            .toMap()
+            .mapNotNull { (key, value) -> value?.let { key to value } }
+            .toMap()
     }
 }
 

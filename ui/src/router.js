@@ -8,6 +8,7 @@ import NotFoundScreen from "@/screens/NotFoundScreen.vue";
 import DependencyUsageScreen from "@/screens/dependency/DependencyUsageScreen.vue";
 import DependencyGraphScreen from "@/screens/dependency/DependencyGraphScreen.vue";
 import DependencyDependenciesScreen from "@/screens/dependency/DependencyDependenciesScreen.vue";
+import ModulesScreen from "@/screens/configuration/ModulesScreen.vue";
 
 
 const routes = [
@@ -25,6 +26,10 @@ const routes = [
             {
                 path: 'dependencies',
                 component: DependenciesScreen,
+            },
+            {
+                path: 'modules',
+                component: ModulesScreen,
             }
         ]
     },
