@@ -53,14 +53,19 @@ export default {
     },
     fillData() {
       if (!this.response) return;
-      this.data = this.response.map(item => {
-        return {
-          name: item,
-          latestVersion: this.latestVersion(item),
-          libSize: this.libSize(item),
-          versionConflict: this.latestVersion(item) && this.latestVersion(item) !== item.split(":")[2],
-        }
-      });
+      this.data = this.response
+          .filter((item) => {
+            let version = item.split(":")[2];
+            return version!=="unspecified"
+          })
+          .map(item => {
+            return {
+              name: item,
+              latestVersion: this.latestVersion(item),
+              libSize: this.libSize(item),
+              versionConflict: this.latestVersion(item) && this.latestVersion(item) !== item.split(":")[2],
+            }
+          });
       this.base = JSON.parse(JSON.stringify(this.data));
     },
 
@@ -129,7 +134,7 @@ export default {
           <span v-if="sortedBy==='libSize' && sortDirection==='asc'">&#8595;</span>
         </th>
         <th v-if="isLatestVersionsEnabled">Latest version</th>
-        <th>Action</th>
+        <th class="has-text-right mr-6 pr-5">Action</th>
       </tr>
       </thead>
       <tbody>
@@ -144,10 +149,12 @@ export default {
           <span v-if="item.versionConflict && item.latestVersion" class="tag is-warning is-medium"> {{
               item.latestVersion
             }}</span>
-          <span v-if="!item.versionConflict && item.latestVersion" class="tag is-white is-medium"> {{ item.latestVersion }}</span>
+          <span v-if="!item.versionConflict && item.latestVersion" class="tag is-white is-medium"> {{
+              item.latestVersion
+            }}</span>
         </td>
-        <td>
-          <div class="button" v-on:click="navigateToDependency(item)">Details</div>
+        <td class="has-text-right mr-6">
+          <div class="button " v-on:click="navigateToDependency(item)">Details</div>
         </td>
       </tr>
       </tbody>

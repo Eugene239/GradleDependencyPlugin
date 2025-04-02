@@ -13,13 +13,18 @@ export default {
     navigateToConflicts() {
       Navigator.navigateToConflicts(this.configurationName);
     },
+    navigateToModules() {
+      Navigator.navigateToModules(this.configurationName);
+    },
     async fetchData() {
-      this.cache.loadInitialCache(this.configurationName);
+      await this.cache.loadInitialCache(this.configurationName);
+      this.hasModules = this.cache.hasModules();
     }
   },
   data() {
     return {
-      configurationName: useRoute().params.configuration
+      configurationName: useRoute().params.configuration,
+      hasModules: false,
     }
   },
   mounted() {
@@ -51,6 +56,9 @@ export default {
           <ul>
             <li :class="{'is-active': $route.path.endsWith('conflicts')}" v-on:click="navigateToConflicts()">
               <a><span class="material-symbols-outlined pr-2">data_alert</span>Conflicts</a></li>
+            <li v-if="hasModules" :class="{'is-active': $route.path.endsWith('modules')}" v-on:click="navigateToModules()">
+              <a><span class="material-symbols-outlined pr-2">view_module</span>Modules</a>
+            </li>
             <li :class="{'is-active': $route.path.endsWith('dependencies')}" v-on:click="navigateToDependencies()">
               <a><span class="material-symbols-outlined pr-2">list</span>Dependencies</a>
             </li>

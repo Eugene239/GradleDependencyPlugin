@@ -14,10 +14,6 @@ export default {
     dependency: {
       type: String,
       required: true,
-    },
-    isSubmodule: {
-      type: Boolean,
-      required: true,
     }
   },
   watch: {
@@ -45,7 +41,7 @@ export default {
   methods: {
    async fetchData() {
       let topDependencies = await Api.topDependencies(this.configuration);
-      this.treeList = await this.cache.getGraphData(topDependencies, this.dependency);
+      this.treeList = await this.cache.getGraphData(this.configuration, topDependencies, this.dependency);
       console.log("treeList", this.treeList);
     }
   }

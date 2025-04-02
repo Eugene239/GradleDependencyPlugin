@@ -1,6 +1,5 @@
 <script>
 import Navbar from './components/Navbar.vue'
-import ConfigurationPanel from './components/ConfigurationPanel.vue'
 import {provide} from "vue";
 import {flatDependenciesCache} from "./cache/flatDependenciesCache.js";
 import {configurationsCache} from "@/cache/configurationsCache.js";
@@ -8,7 +7,6 @@ import {configurationsCache} from "@/cache/configurationsCache.js";
 export default {
   components: {
     Navbar,
-    ConfigurationPanel,
   },
   data() {
     return {}

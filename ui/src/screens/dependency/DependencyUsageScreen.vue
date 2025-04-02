@@ -36,6 +36,7 @@ export default {
   },
   methods: {
     async fetchData() {
+      await this.cache.loadInitialCache(this.configuration);
       this.usage = await this.cache.getUsage(this.dependency);
     },
     navigateToDependency(item) {
