@@ -17,7 +17,7 @@ apply(plugin = "io.github.eugene239.gradle.plugin.dependency") version $latest
 ### Make Dependencies Report
 
 ```shell
-$ gralde app:dependencyReport
+$ gradle app:dependencyReport
 ```
 
 Will create a MD file with all outdated versions for all flavours
@@ -27,7 +27,7 @@ Will create a MD file with all outdated versions for all flavours
 Plugin will create a web site to see dependency usage, conflicts and dependency graph.
 
 ```shell
-$ gralde app:dependencyWP
+$ gradle app:dependencyWP
 ```
 
 Cancel task to stop httpServer
