@@ -7,7 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import org.gradle.api.Project
 import org.gradle.api.logging.Logger
 
-object CommonModule {
+internal object CommonModule {
 
     fun register(project: Project) {
         project.logger.warn("[DI] Register CommonModule")

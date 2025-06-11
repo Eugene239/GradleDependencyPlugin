@@ -3,6 +3,7 @@ package io.github.eugene239.gradle.plugin.dependency.internal.server
 import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
 import io.github.eugene239.gradle.plugin.dependency.internal.di.di
+import io.github.eugene239.gradle.plugin.dependency.task.WPTaskConfiguration
 import org.gradle.api.logging.Logger
 import java.net.Inet4Address
 import java.net.InetSocketAddress
@@ -13,10 +14,14 @@ internal class PluginHttpServer {
     private val logger: Logger by di()
     private val executorService: ExecutorService by di()
     private val httpHandler: HttpHandler by di()
+    private val taskConfiguration: WPTaskConfiguration by di()
+    private val port: Int? by lazy {
+        taskConfiguration.httpPort
+    }
 
     private var server: HttpServer? = null
 
-    fun start(port: Int? = null) {
+    fun start() {
         server = HttpServer.create(InetSocketAddress(Inet4Address.getLoopbackAddress(), port ?: 0), 0)
         server?.createContext("/", httpHandler)
         server?.executor = executorService

@@ -28,7 +28,7 @@ import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-object DynamicModule {
+internal object DynamicModule {
 
     fun register(taskConfiguration: TaskConfiguration) {
         val logger = DI.resolve(Logger::class.java)

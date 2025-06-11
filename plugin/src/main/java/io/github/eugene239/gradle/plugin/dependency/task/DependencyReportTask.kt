@@ -38,4 +38,5 @@ abstract class DependencyReportTask : BaseTask() {
             override val connectionTimeOut: Long = connectionTimeout.toLongOrNull() ?: DEFAULT_CONNECTION_TIMEOUT
         }
     }
+
 }

@@ -8,8 +8,8 @@ interface TaskConfiguration {
     val connectionTimeOut: Long
 }
 
-// todo
 interface WPTaskConfiguration : TaskConfiguration {
-
-
+    val httpPort: Int?
+    val fetchLibrarySize: Boolean
+    val fetchLatestVersions: Boolean
 }

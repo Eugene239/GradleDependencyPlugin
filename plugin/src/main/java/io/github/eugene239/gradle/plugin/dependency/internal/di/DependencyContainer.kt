@@ -1,5 +1,8 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.di
 
+import io.ktor.util.reflect.instanceOf
+
+
 /**
  * Simple DI feels like service discovery
  * Helps to remove duplicated code and initialization boilerplate
@@ -14,9 +17,11 @@ internal class DependencyContainer {
 
     fun <T : Any> resolve(clazz: Class<T>): T {
         @Suppress("UNCHECKED_CAST")
-        return instances[clazz] as? T ?: throw IllegalStateException("Can't resolve instance of $clazz").also {
-            it.printStackTrace()
-        }
+        return instances[clazz] as? T
+            ?: instances.values.find { clazz.isInstance(it) } as? T
+            ?: throw IllegalStateException("Can't resolve instance of $clazz").also {
+                it.printStackTrace()
+            }
     }
 
     fun clear() {

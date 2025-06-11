@@ -1,7 +1,5 @@
 package io.github.eugene239.gradle.plugin.dependency.task
 
-import io.github.eugene239.gradle.plugin.dependency.internal.StartupFlags
-import io.github.eugene239.gradle.plugin.dependency.internal.di.di
 import io.github.eugene239.gradle.plugin.dependency.internal.filteredConfigurations
 import io.github.eugene239.gradle.plugin.dependency.internal.server.PluginHttpServer
 import io.github.eugene239.gradle.plugin.dependency.internal.usecase.GraphUseCase
@@ -39,10 +37,6 @@ abstract class DependencyWPTask : BaseTask() {
     @Option(option = "fetch-latest-versions", description = "Flag to fetch top dependencies latest versions")
     var fetchLatestVersions: String = ""
 
-
-    private val server: PluginHttpServer by di()
-
-
     override suspend fun exec() {
         val configurations = if (configuration.isBlank()) {
             project.filteredConfigurations()
@@ -52,21 +46,22 @@ abstract class DependencyWPTask : BaseTask() {
         val useCase = GraphUseCase()
         useCase.execute(
             GraphUseCaseParams(
-                configurations = configurations,
-                startupFlags = StartupFlags(
-                    fetchVersions = fetchLatestVersions.toBoolean(),
-                    fetchLibSize = fetchSize.toBoolean()
-                ),
+                configurations = configurations
             )
         )
-        server.start(port = httpPort.toIntOrNull())
+        val server = PluginHttpServer()
+        server.start()
     }
 
-    override fun configuration(): TaskConfiguration {
+    override fun configuration(): WPTaskConfiguration {
         return object : WPTaskConfiguration {
             override val repositoryConnectionLimit: Int = limit.toIntOrNull() ?: DEFAULT_LIMIT
             override val regexFilter: String? = filter.ifBlank { null }
             override val connectionTimeOut: Long = connectionTimeout.toLongOrNull() ?: DEFAULT_CONNECTION_TIMEOUT
+            override val fetchLatestVersions: Boolean = this@DependencyWPTask.fetchLatestVersions.toBoolean()
+            override val fetchLibrarySize: Boolean = fetchSize.toBoolean()
+            override val httpPort: Int? = this@DependencyWPTask.httpPort.toIntOrNull()
         }
     }
+
 }

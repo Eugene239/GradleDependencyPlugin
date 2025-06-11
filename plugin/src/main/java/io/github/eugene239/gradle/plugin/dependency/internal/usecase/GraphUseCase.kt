@@ -20,6 +20,7 @@ import io.github.eugene239.gradle.plugin.dependency.internal.provider.IsSubmodul
 import io.github.eugene239.gradle.plugin.dependency.internal.rethrowCancellationException
 import io.github.eugene239.gradle.plugin.dependency.internal.toIdentifier
 import io.github.eugene239.gradle.plugin.dependency.internal.toLibDetails
+import io.github.eugene239.gradle.plugin.dependency.task.WPTaskConfiguration
 import io.github.eugene239.plugin.BuildConfig
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
@@ -41,6 +42,14 @@ internal class GraphUseCase : UseCase<GraphUseCaseParams, File> {
     private val childrenCache: ChildrenCache by di()
     private val latestVersionCache: LatestVersionCache by di()
     private val output: GraphOutput by di()
+    private val taskConfiguration: WPTaskConfiguration by di()
+    private val startupFlags: StartupFlags by lazy {
+        StartupFlags(
+            fetchVersions = taskConfiguration.fetchLatestVersions,
+            fetchLibSize = taskConfiguration.fetchLibrarySize
+        )
+    }
+
 
     private val libIdToRepositoryName = HashMap<LibIdentifier, String?>()
 
@@ -68,11 +77,11 @@ internal class GraphUseCase : UseCase<GraphUseCaseParams, File> {
                     )
                 }.toSet(),
                 version = BuildConfig.PLUGIN_VERSION,
-                startupFlags = params.startupFlags
+                startupFlags = startupFlags
             ),
             results = results,
-            latestVersions = getLatestVersions(params.startupFlags.fetchVersions, allTopLibDetails),
-            libSizes = getLibSizes(params.startupFlags.fetchLibSize, allTopLibDetails)
+            latestVersions = getLatestVersions(startupFlags.fetchVersions, allTopLibDetails),
+            libSizes = getLibSizes(startupFlags.fetchLibSize, allTopLibDetails)
         )
     }
 
@@ -277,5 +286,4 @@ internal class GraphUseCase : UseCase<GraphUseCaseParams, File> {
 
 internal data class GraphUseCaseParams(
     val configurations: Set<Configuration>,
-    val startupFlags: StartupFlags,
 ) : UseCaseParams
