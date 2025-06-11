@@ -2,12 +2,15 @@ package io.github.eugene239.gradle.plugin.dependency.internal.output.report
 
 import freemarker.template.Configuration
 import freemarker.template.TemplateExceptionHandler
+import io.github.eugene239.gradle.plugin.dependency.internal.di.RootDir
+import io.github.eugene239.gradle.plugin.dependency.internal.di.di
 import io.github.eugene239.plugin.BuildConfig
 import java.io.File
 
-internal class MarkdownReportFormatter(
-    private val outputDirectory: File
-) : ReportFormatter {
+internal class MarkdownReportFormatter : ReportFormatter {
+
+    private val rootDir: RootDir by di()
+    private val outputDirectory by lazy { rootDir.file }
 
     override fun format(outdated: Collection<OutdatedDependency>): File {
         val file = createFile()

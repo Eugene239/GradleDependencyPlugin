@@ -1,6 +1,7 @@
 package io.github.eugene239.gradle.plugin.dependency.internal
 
-import io.github.eugene239.gradle.plugin.dependency.internal.filter.DependencyFilter
+import io.github.eugene239.gradle.plugin.dependency.internal.filter.RegexFilter
+import io.github.eugene239.gradle.plugin.dependency.internal.provider.IsSubmoduleProvider
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenMetadata
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
@@ -44,17 +45,17 @@ internal fun MavenMetadata.containsVersion(libKey: LibKey): Boolean {
     return versioning?.versions?.version?.contains(libKey.version) == true
 }
 
-internal fun Configuration.getLibDetails(filter: DependencyFilter, isSubmodule: (ResolvedDependencyResult) -> Boolean): Set<LibDetails> {
+internal fun Configuration.getLibDetails(filter: RegexFilter, isSubmoduleProvider: IsSubmoduleProvider): Set<LibDetails> {
     return incoming.resolutionResult.root.dependencies
         .asSequence()
         .filterIsInstance<ResolvedDependencyResult>()
         .filter { filter.matches(it) }
         .toSet()
-        .map { dependency -> dependency.toLibDetails(isSubmodule = isSubmodule.invoke(dependency)) }
+        .map { dependency -> dependency.toLibDetails(isSubmodule = isSubmoduleProvider.isSubmodule(dependency)) }
         .toSet()
 }
 
-suspend fun <T> coRunCatching(block: suspend ()-> T): Result<T> {
+suspend fun <T> coRunCatching(block: suspend () -> T): Result<T> {
     return runCatching {
         block()
     }.onFailure {

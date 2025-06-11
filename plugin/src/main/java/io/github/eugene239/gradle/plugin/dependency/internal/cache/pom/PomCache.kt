@@ -3,16 +3,16 @@ package io.github.eugene239.gradle.plugin.dependency.internal.cache.pom
 import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.repository.RepositoryByNameCache
 import io.github.eugene239.gradle.plugin.dependency.internal.coRunCatching
+import io.github.eugene239.gradle.plugin.dependency.internal.di.di
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenService
 import io.github.eugene239.gradle.plugin.dependency.internal.service.Pom
 import io.github.eugene239.gradle.plugin.dependency.internal.service.Repository
 import org.gradle.internal.cc.base.logger
 import java.util.concurrent.ConcurrentHashMap
 
-internal class PomCache(
-    private val mavenService: MavenService,
-    private val repositoryCache: RepositoryByNameCache
-) {
+internal class PomCache {
+    private val mavenService: MavenService by di()
+    private val repositoryCache: RepositoryByNameCache by di()
 
     private val cache = ConcurrentHashMap<LibKey, Result<Pom>>()
 

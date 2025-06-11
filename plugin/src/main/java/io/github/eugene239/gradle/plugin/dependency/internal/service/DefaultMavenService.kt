@@ -2,10 +2,12 @@ package io.github.eugene239.gradle.plugin.dependency.internal.service
 
 import io.github.eugene239.gradle.plugin.dependency.internal.LibIdentifier
 import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
+import io.github.eugene239.gradle.plugin.dependency.internal.di.di
 import io.github.eugene239.gradle.plugin.dependency.internal.exception.PomException
 import io.github.eugene239.gradle.plugin.dependency.internal.exception.WIPException
 import io.github.eugene239.gradle.plugin.dependency.internal.provider.RepositoryProvider
 import io.github.eugene239.gradle.plugin.dependency.internal.service.simplexml.SimpleXmlConverter
+import io.github.eugene239.gradle.plugin.dependency.task.TaskConfiguration
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
@@ -20,32 +22,26 @@ import kotlinx.coroutines.sync.withPermit
 import org.gradle.api.logging.Logger
 import java.net.URL
 
-internal class DefaultMavenService(
-    private val logger: Logger,
-    private val repositoryProvider: RepositoryProvider,
-    private val timeoutMillis: Long,
-) : MavenService {
+internal class DefaultMavenService : MavenService {
 
-    private val client: HttpClient = HttpClient(CIO) {
-        install(HttpTimeout) {
-            requestTimeoutMillis = timeoutMillis
-            connectTimeoutMillis = timeoutMillis
-            socketTimeoutMillis = timeoutMillis
-        }
-//        install(HttpRequestRetry) {
-//            retryOnExceptionIf(
-//                maxRetries = 2
-//            ) { request, exception ->
-//                if (exception !is CancellationException) {
-//                    logger.warn("${request.url} failed with $exception")
-//                }
-//                exception is IOException
-//                //exception is HttpRequestTimeoutException || exception is IOException
-//            }
-//            delayMillis { retry: Int -> retry * 1000L }
-//        }
-        install(ContentNegotiation) {
-            register(ContentType.Any, SimpleXmlConverter())
+    private val logger: Logger by di()
+    private val repositoryProvider: RepositoryProvider by di()
+    private val taskConfiguration: TaskConfiguration by di()
+    private val timeoutMillis: Long by lazy {
+        taskConfiguration.connectionTimeOut
+    }
+
+    private val client: HttpClient by lazy {
+        HttpClient(CIO) {
+            install(HttpTimeout) {
+                requestTimeoutMillis = timeoutMillis
+                connectTimeoutMillis = timeoutMillis
+                socketTimeoutMillis = timeoutMillis
+            }
+
+            install(ContentNegotiation) {
+                register(ContentType.Any, SimpleXmlConverter())
+            }
         }
     }
 

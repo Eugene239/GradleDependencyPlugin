@@ -4,14 +4,14 @@ import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.pom.PomCache
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.repository.RepositoryByNameCache
 import io.github.eugene239.gradle.plugin.dependency.internal.coRunCatching
+import io.github.eugene239.gradle.plugin.dependency.internal.di.di
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenService
 import java.util.concurrent.ConcurrentHashMap
 
-internal class SizeCache(
-    private val repositoryCache: RepositoryByNameCache,
-    private val mavenService: MavenService,
-    private val pomCache: PomCache
-) {
+internal class SizeCache {
+    private val repositoryCache: RepositoryByNameCache by di()
+    private val mavenService: MavenService by di()
+    private val pomCache: PomCache by di()
 
     private val cache = ConcurrentHashMap<LibKey, Result<Long>>()
 
