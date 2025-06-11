@@ -3,6 +3,7 @@ package io.github.eugene239.gradle.plugin.dependency.internal.cache.repository
 import io.github.eugene239.gradle.plugin.dependency.internal.LibIdentifier
 import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.containsVersion
+import io.github.eugene239.gradle.plugin.dependency.internal.di.di
 import io.github.eugene239.gradle.plugin.dependency.internal.exception.RepositoryException
 import io.github.eugene239.gradle.plugin.dependency.internal.provider.RepositoryProvider
 import io.github.eugene239.gradle.plugin.dependency.internal.rethrowCancellationException
@@ -15,13 +16,11 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.gradle.internal.cc.base.logger
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.jvm.Throws
 
-internal class RepositoryByNameCache(
-    private val repositoryProvider: RepositoryProvider,
-    private val mavenService: MavenService,
-    private val ioDispatcher: CoroutineDispatcher
-) {
+internal class RepositoryByNameCache() {
+    private val ioDispatcher: CoroutineDispatcher by di()
+    private val repositoryProvider: RepositoryProvider by di()
+    private val mavenService: MavenService by di()
     private val cache = ConcurrentHashMap<LibIdentifier, Repository>()
     private val metadataCache = ConcurrentHashMap<LibIdentifier, Map<Repository, MavenMetadata>>()
 

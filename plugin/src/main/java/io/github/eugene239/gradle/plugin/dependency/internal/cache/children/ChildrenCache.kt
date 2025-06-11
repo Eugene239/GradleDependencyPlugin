@@ -4,6 +4,7 @@ import io.github.eugene239.gradle.plugin.dependency.internal.LibIdentifier
 import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.UNSPECIFIED_VERSION
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.pom.PomCache
+import io.github.eugene239.gradle.plugin.dependency.internal.di.di
 import io.github.eugene239.gradle.plugin.dependency.internal.exception.DependencyException
 import io.github.eugene239.gradle.plugin.dependency.internal.exception.PomException
 import io.github.eugene239.gradle.plugin.dependency.internal.rethrowCancellationException
@@ -12,13 +13,12 @@ import io.github.eugene239.gradle.plugin.dependency.internal.service.Pom
 import org.gradle.internal.cc.base.logger
 import java.util.concurrent.ConcurrentHashMap
 
-internal class ChildrenCache(
-    private val pomCache: PomCache
-) {
+internal class ChildrenCache {
     companion object {
         private val ignoreScope = listOf("test", "provided", "runtime", "system")
     }
 
+    private val pomCache: PomCache by di()
     private val cache = ConcurrentHashMap<LibKey, Result<List<LibKey>>>()
 
     suspend fun get(key: LibKey, repositoryName: String): Result<List<LibKey>> {

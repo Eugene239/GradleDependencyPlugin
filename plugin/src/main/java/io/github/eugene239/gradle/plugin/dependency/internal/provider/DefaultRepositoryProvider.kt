@@ -1,7 +1,9 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.provider
 
+import io.github.eugene239.gradle.plugin.dependency.internal.di.di
 import io.github.eugene239.gradle.plugin.dependency.internal.service.Repository
 import io.github.eugene239.gradle.plugin.dependency.internal.service.toRepository
+import io.github.eugene239.gradle.plugin.dependency.task.TaskConfiguration
 import kotlinx.coroutines.sync.Semaphore
 import org.gradle.api.Project
 import org.gradle.api.artifacts.dsl.RepositoryHandler
@@ -11,15 +13,18 @@ import org.gradle.api.logging.Logger
 import org.gradle.invocation.DefaultGradle
 
 @Suppress("UnstableApiUsage")
-internal class DefaultRepositoryProvider(
-    private val project: Project,
-    private val logger: Logger,
-    private val limit: Int
-) : RepositoryProvider {
+internal class DefaultRepositoryProvider : RepositoryProvider {
+
+    private val project: Project by di()
+    private val logger: Logger by di()
+    private val taskConfiguration: TaskConfiguration by di()
+    private val connectionLimit: Int by lazy {
+        taskConfiguration.repositoryConnectionLimit
+    }
 
     private val repositoriesSet: Set<Repository> by lazy { collect() }
     private val repositoryLimit: Map<Repository, Semaphore> by lazy {
-        repositoriesSet.associateWith { Semaphore(limit) }
+        repositoriesSet.associateWith { Semaphore(connectionLimit) }
     }
 
     override fun getRepositories(): Set<Repository> {

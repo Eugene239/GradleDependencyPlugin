@@ -1,13 +1,23 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.filter
 
+import io.github.eugene239.gradle.plugin.dependency.internal.di.di
+import io.github.eugene239.gradle.plugin.dependency.task.TaskConfiguration
+import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
 
-internal class DependencyFilter(
-    private val rootProjectName: String
-) : RegexFilter {
+internal class DependencyFilter : RegexFilter {
 
-    private var regex: Regex? = null
+    private val project: Project by di()
+
+    private val taskConfiguration: TaskConfiguration by di()
+    private val rootProjectName by lazy {
+        project.rootProject.name
+    }
+    private val regex: Regex? by lazy {
+        taskConfiguration.regexFilter?.run { Regex(this) }
+    }
+
 
     override fun matches(dependency: String): Boolean {
         val group = dependency.split(":").first()
@@ -29,7 +39,4 @@ internal class DependencyFilter(
         return rootProjectName.equals(group, true)
     }
 
-    fun setRegex(regex: Regex?) {
-        this.regex = regex
-    }
 }

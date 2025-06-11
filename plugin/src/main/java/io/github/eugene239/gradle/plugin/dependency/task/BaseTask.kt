@@ -1,10 +1,9 @@
 package io.github.eugene239.gradle.plugin.dependency.task
 
-import io.github.eugene239.gradle.plugin.dependency.internal.OUTPUT_PATH
+import io.github.eugene239.gradle.plugin.dependency.internal.di.DynamicModule
 import kotlinx.coroutines.runBlocking
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
-import java.io.File
 
 abstract class BaseTask : DefaultTask() {
 
@@ -16,7 +15,7 @@ abstract class BaseTask : DefaultTask() {
     @TaskAction
     fun init() {
         runCatching {
-            makeDir()
+            DynamicModule.register(configuration())
             runBlocking {
                 exec()
             }
@@ -26,14 +25,9 @@ abstract class BaseTask : DefaultTask() {
         }
     }
 
-    private fun makeDir() {
-        val rootDir = File(project.layout.buildDirectory.asFile.get(), OUTPUT_PATH)
-        if (rootDir.exists()) {
-            rootDir.mkdirs()
-        } else {
-            rootDir.mkdirs()
-        }
-    }
+
+    abstract fun configuration(): TaskConfiguration
 
     abstract suspend fun exec()
+
 }

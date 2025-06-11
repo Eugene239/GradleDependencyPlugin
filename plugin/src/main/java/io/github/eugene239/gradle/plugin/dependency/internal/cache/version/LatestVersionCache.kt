@@ -4,18 +4,17 @@ import io.github.eugene239.gradle.plugin.dependency.internal.LibIdentifier
 import io.github.eugene239.gradle.plugin.dependency.internal.LibKey
 import io.github.eugene239.gradle.plugin.dependency.internal.PREP_RELEASE_KEYS
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.repository.RepositoryByNameCache
-import io.github.eugene239.gradle.plugin.dependency.internal.cache.repository.RepositoryCache
 import io.github.eugene239.gradle.plugin.dependency.internal.coRunCatching
+import io.github.eugene239.gradle.plugin.dependency.internal.di.di
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenMetadata
 import io.github.eugene239.gradle.plugin.dependency.internal.toIdentifier
 import org.gradle.api.logging.Logger
 import java.lang.module.ModuleDescriptor
 import java.util.concurrent.ConcurrentHashMap
 
-internal class LatestVersionCache(
-    private val logger: Logger,
-    private val repositoryCache: RepositoryByNameCache
-) {
+internal class LatestVersionCache {
+    private val logger: Logger by di()
+    private val repositoryCache: RepositoryByNameCache by di()
 
     private val cache = ConcurrentHashMap<LibIdentifier, ModuleDescriptor.Version?>()
 
@@ -26,7 +25,7 @@ internal class LatestVersionCache(
         }
         val metadataSet = coRunCatching { repositoryCache.getMetadataSet(key, repositoryName) }
             .onFailure {
-                logger.warn("Can't get metadata for $key",it)
+                logger.warn("Can't get metadata for $key", it)
             }
             .getOrElse { emptySet() }
         val latest = metadataSet.map(::toVersions)

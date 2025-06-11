@@ -5,14 +5,11 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import org.slf4j.Logger
 import java.io.File
 import java.io.FileNotFoundException
 import java.net.URL
 
-internal class DefaultUiSaver(
-    private val logger: Logger
-) : UiSaver {
+internal class DefaultUiSaver() : UiSaver {
     companion object {
         private const val BASE_SITE_FILE = "index.html"
     }

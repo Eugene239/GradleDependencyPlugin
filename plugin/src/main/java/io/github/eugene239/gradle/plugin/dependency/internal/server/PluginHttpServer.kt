@@ -1,24 +1,24 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.server
 
+import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
+import io.github.eugene239.gradle.plugin.dependency.internal.di.di
 import org.gradle.api.logging.Logger
-import java.io.File
 import java.net.Inet4Address
 import java.net.InetSocketAddress
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
-internal class PluginHttpServer(
-    private val rootDir: File,
-    private val logger: Logger,
-    private val executorService: ExecutorService
-) {
+internal class PluginHttpServer {
+    private val logger: Logger by di()
+    private val executorService: ExecutorService by di()
+    private val httpHandler: HttpHandler by di()
 
     private var server: HttpServer? = null
 
     fun start(port: Int? = null) {
         server = HttpServer.create(InetSocketAddress(Inet4Address.getLoopbackAddress(), port ?: 0), 0)
-        server?.createContext("/", PluginHttpHandler(rootDir, logger))
+        server?.createContext("/", httpHandler)
         server?.executor = executorService
         server?.start()
         logger.lifecycle("")
