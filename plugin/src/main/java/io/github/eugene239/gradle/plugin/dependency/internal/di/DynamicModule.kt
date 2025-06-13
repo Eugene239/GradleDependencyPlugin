@@ -9,6 +9,9 @@ import io.github.eugene239.gradle.plugin.dependency.internal.cache.size.SizeCach
 import io.github.eugene239.gradle.plugin.dependency.internal.cache.version.LatestVersionCache
 import io.github.eugene239.gradle.plugin.dependency.internal.filter.DependencyFilter
 import io.github.eugene239.gradle.plugin.dependency.internal.filter.RegexFilter
+import io.github.eugene239.gradle.plugin.dependency.internal.output.Output
+import io.github.eugene239.gradle.plugin.dependency.internal.output.conflict.ConsoleConflictOutput
+import io.github.eugene239.gradle.plugin.dependency.internal.output.conflict.MDConflictOutput
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.DefaultGraphOutput
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.GraphOutput
 import io.github.eugene239.gradle.plugin.dependency.internal.output.report.MarkdownReportFormatter
@@ -21,7 +24,10 @@ import io.github.eugene239.gradle.plugin.dependency.internal.service.DefaultMave
 import io.github.eugene239.gradle.plugin.dependency.internal.service.MavenService
 import io.github.eugene239.gradle.plugin.dependency.internal.ui.DefaultUiSaver
 import io.github.eugene239.gradle.plugin.dependency.internal.ui.UiSaver
+import io.github.eugene239.gradle.plugin.dependency.internal.usecase.ConflictUseCaseResult
 import io.github.eugene239.gradle.plugin.dependency.task.TaskConfiguration
+import freemarker.template.Configuration
+import freemarker.template.TemplateExceptionHandler
 import org.gradle.api.Project
 import org.gradle.api.logging.Logger
 import java.io.File
@@ -61,5 +67,17 @@ internal object DynamicModule {
         DI.register(ReportFormatter::class.java, MarkdownReportFormatter())
         DI.register(GraphOutput::class.java, DefaultGraphOutput())
         DI.register(UiSaver::class.java, DefaultUiSaver())
+        DI.register(
+            Configuration::class.java, Configuration(Configuration.VERSION_2_3_33).apply {
+                defaultEncoding = "UTF-8"
+                logTemplateExceptions = true
+                templateExceptionHandler = TemplateExceptionHandler.RETHROW_HANDLER
+                setClassForTemplateLoading(this::class.java, "/templates")
+            }
+        )
+
+        // Output v2
+        register<Output<ConflictUseCaseResult, Unit>>(ConsoleConflictOutput())
+        // register<Output<ConflictUseCaseResult, File>>(MDConflictOutput())
     }
 }

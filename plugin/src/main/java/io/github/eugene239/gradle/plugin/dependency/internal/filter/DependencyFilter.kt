@@ -4,6 +4,7 @@ import io.github.eugene239.gradle.plugin.dependency.internal.di.di
 import io.github.eugene239.gradle.plugin.dependency.task.TaskConfiguration
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
+import org.gradle.api.artifacts.DependencyResolveDetails
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
 
 internal class DependencyFilter : RegexFilter {
@@ -21,8 +22,7 @@ internal class DependencyFilter : RegexFilter {
 
     override fun matches(dependency: String): Boolean {
         val group = dependency.split(":").first()
-        val regexInstance = regex
-        return rootProjectName.equals(group, true) || regexInstance == null || dependency.matches(regexInstance)
+        return rootProjectName.equals(group, true) || regex == null || dependency.matches(regex!!)
     }
 
     override fun matches(result: ResolvedDependencyResult): Boolean {
@@ -32,6 +32,11 @@ internal class DependencyFilter : RegexFilter {
 
     override fun matches(dependency: Dependency): Boolean {
         return matches("${dependency.group}:${dependency.name}${dependency.version}")
+    }
+
+    override fun matched(dependency: DependencyResolveDetails): Boolean {
+        val string = with(dependency.requested) { "$group:$name:$version" }
+        return matches(string)
     }
 
     override fun isSubmodule(result: ResolvedDependencyResult): Boolean {

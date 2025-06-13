@@ -1,8 +1,5 @@
 package io.github.eugene239.gradle.plugin.dependency.internal.di
 
-import io.ktor.util.reflect.instanceOf
-
-
 /**
  * Simple DI feels like service discovery
  * Helps to remove duplicated code and initialization boilerplate
@@ -32,3 +29,4 @@ internal class DependencyContainer {
 internal val DI = DependencyContainer()
 internal fun <T : Any> inject(clazz: Class<T>): Lazy<T> = lazy { DI.resolve(clazz) }
 internal inline fun <reified T : Any> di(): Lazy<T> = inject(T::class.java)
+internal inline fun <reified T : Any> register(instance: T) = DI.register(T::class.java, instance)

@@ -33,7 +33,7 @@ import org.gradle.api.logging.Logger
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
-internal class GraphUseCase : UseCase<GraphUseCaseParams, File> {
+internal class GraphUseCase : UseCase<GraphUseCaseParams, Unit> {
     private val logger: Logger by di()
     private val isSubmoduleProvider: IsSubmoduleProvider by di()
     private val dependencyFilter: RegexFilter by di()
@@ -50,10 +50,9 @@ internal class GraphUseCase : UseCase<GraphUseCaseParams, File> {
         )
     }
 
-
     private val libIdToRepositoryName = HashMap<LibIdentifier, String?>()
 
-    override suspend fun execute(params: GraphUseCaseParams): File = coroutineScope {
+    override suspend fun execute(params: GraphUseCaseParams): Unit = coroutineScope {
         logger.info("Start execution with params: $params")
 
         val allTopLibDetails = params.configurations
@@ -68,7 +67,7 @@ internal class GraphUseCase : UseCase<GraphUseCaseParams, File> {
             async { processConfiguration(it) }
         }.awaitAll()
 
-        return@coroutineScope output.save(
+        output.save(
             pluginConfiguration = PluginConfiguration(
                 configurations = params.configurations.map {
                     ProjectConfiguration(

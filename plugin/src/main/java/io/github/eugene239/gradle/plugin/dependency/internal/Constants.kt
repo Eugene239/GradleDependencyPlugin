@@ -13,3 +13,6 @@ internal val PREP_RELEASE_KEYS = setOf(
         .flatten()
         .toTypedArray()
 )
+
+internal const val WARN = "⚠\uFE0F"
+internal const val FAIL = "❗"
