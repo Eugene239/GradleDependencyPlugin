@@ -2,7 +2,7 @@ package io.github.eugene239.gradle.plugin.dependency
 
 import io.github.eugene239.gradle.plugin.dependency.internal.di.CommonModule
 import io.github.eugene239.gradle.plugin.dependency.task.DependencyConflictTask
-import io.github.eugene239.gradle.plugin.dependency.task.DependencyReportTask
+import io.github.eugene239.gradle.plugin.dependency.task.DependencyLatestVersionsTask
 import io.github.eugene239.gradle.plugin.dependency.task.DependencyWPTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -18,7 +18,7 @@ class DependencyPlugin : Plugin<Project> {
     }
 
     private fun registerTask(project: Project) {
-        project.tasks.register("dependencyReport", DependencyReportTask::class.java) {
+        project.tasks.register("dependencyLatestVersions", DependencyLatestVersionsTask::class.java) {
             it.group = "dependency-ui"
         }
         project.tasks.register("dependencyWP", DependencyWPTask::class.java) {

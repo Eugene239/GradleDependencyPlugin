@@ -11,11 +11,8 @@ import io.github.eugene239.gradle.plugin.dependency.internal.filter.DependencyFi
 import io.github.eugene239.gradle.plugin.dependency.internal.filter.RegexFilter
 import io.github.eugene239.gradle.plugin.dependency.internal.output.Output
 import io.github.eugene239.gradle.plugin.dependency.internal.output.conflict.ConsoleConflictOutput
-import io.github.eugene239.gradle.plugin.dependency.internal.output.conflict.MDConflictOutput
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.DefaultGraphOutput
 import io.github.eugene239.gradle.plugin.dependency.internal.output.graph.GraphOutput
-import io.github.eugene239.gradle.plugin.dependency.internal.output.report.MarkdownReportFormatter
-import io.github.eugene239.gradle.plugin.dependency.internal.output.report.ReportFormatter
 import io.github.eugene239.gradle.plugin.dependency.internal.provider.DefaultRepositoryProvider
 import io.github.eugene239.gradle.plugin.dependency.internal.provider.RepositoryProvider
 import io.github.eugene239.gradle.plugin.dependency.internal.server.PluginHttpHandler
@@ -63,10 +60,11 @@ internal object DynamicModule {
         DI.register(PluginHttpServer::class.java, PluginHttpServer())
         DI.register(SizeCache::class.java, SizeCache())
 
-        // Output
-        DI.register(ReportFormatter::class.java, MarkdownReportFormatter())
+        // Output Legacy
         DI.register(GraphOutput::class.java, DefaultGraphOutput())
         DI.register(UiSaver::class.java, DefaultUiSaver())
+
+        // Output
         DI.register(
             Configuration::class.java, Configuration(Configuration.VERSION_2_3_33).apply {
                 defaultEncoding = "UTF-8"
@@ -75,8 +73,6 @@ internal object DynamicModule {
                 setClassForTemplateLoading(this::class.java, "/templates")
             }
         )
-
-        // Output v2
         register<Output<ConflictUseCaseResult, Unit>>(ConsoleConflictOutput())
         // register<Output<ConflictUseCaseResult, File>>(MDConflictOutput())
     }

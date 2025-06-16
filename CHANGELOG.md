@@ -7,7 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Added
 
+Conflict report
 Simple DI and refactor
+
+#### Breaking changes
+
+Changed dependency Report task name and format
 
 #### Removed
 

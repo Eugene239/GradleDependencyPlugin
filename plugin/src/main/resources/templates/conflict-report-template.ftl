@@ -9,5 +9,3 @@
 | ${conflict.library} | ${conflict.level} | ${conflict.versions} |
 </#list>
 </#if>
-
-<br>

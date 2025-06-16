@@ -1,5 +1,6 @@
 package io.github.eugene239.gradle.plugin.dependency.task
 
+import io.github.eugene239.gradle.plugin.dependency.internal.CONSOLE
 import io.github.eugene239.gradle.plugin.dependency.internal.filteredConfigurations
 import io.github.eugene239.gradle.plugin.dependency.internal.output.Output
 import io.github.eugene239.gradle.plugin.dependency.internal.output.conflict.ConsoleConflictOutput
@@ -22,6 +23,10 @@ abstract class DependencyConflictTask : BaseTask() {
     @Option(option = "output-format", description = "Output format for result (console, md), by default `md`")
     var outputFormat: String = ""
 
+    @Input
+    @Option(option = "fail-on-conflict", description = "Fail task if there are any conflict, by default: false")
+    var failOnConflict: String = ""
+
 
     override suspend fun exec() {
         val level = ConflictLevel.entries
@@ -43,11 +48,15 @@ abstract class DependencyConflictTask : BaseTask() {
         if (result is File) {
             logger.lifecycle("Report in file://${result.path}")
         }
+
+        if (failOnConflict.toBoolean() && data.conflictSet.isNotEmpty()) {
+            throw Exception("Project contains ${data.conflictSet.size} conflicts")
+        }
     }
 
     private fun getOutput(): Output<ConflictUseCaseResult, *> {
         return when (outputFormat) {
-            "console" -> ConsoleConflictOutput()
+            CONSOLE -> ConsoleConflictOutput()
             else -> MDConflictOutput()
         }
     }

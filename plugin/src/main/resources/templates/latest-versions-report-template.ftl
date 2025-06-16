@@ -9,7 +9,3 @@
 | ${dep.name} | ${dep.status} | ${dep.currentVersion} | ${dep.latestVersion} |
 </#list>
 </#if>
-
-<br>
-
-```Plugin version ${version}```

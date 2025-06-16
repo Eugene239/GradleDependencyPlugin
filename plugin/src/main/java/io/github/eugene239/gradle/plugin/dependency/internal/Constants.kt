@@ -3,6 +3,7 @@ package io.github.eugene239.gradle.plugin.dependency.internal
 
 internal const val UNSPECIFIED_VERSION = "unspecified"
 internal const val OUTPUT_PATH = "dependency-ui"
+internal const val CONSOLE = "console"
 internal val PREP_RELEASE_KEYS = setOf(
     "rc", "alpha", "beta", "snapshot",
     "preview", "dev", "incubating",
@@ -14,5 +15,7 @@ internal val PREP_RELEASE_KEYS = setOf(
         .toTypedArray()
 )
 
+
 internal const val WARN = "⚠\uFE0F"
 internal const val FAIL = "❗"
+internal const val OK = "✅"
