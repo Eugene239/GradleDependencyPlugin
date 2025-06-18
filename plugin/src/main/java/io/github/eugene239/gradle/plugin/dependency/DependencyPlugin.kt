@@ -4,6 +4,7 @@ import io.github.eugene239.gradle.plugin.dependency.internal.di.CommonModule
 import io.github.eugene239.gradle.plugin.dependency.task.DependencyConflictTask
 import io.github.eugene239.gradle.plugin.dependency.task.DependencyLatestVersionsTask
 import io.github.eugene239.gradle.plugin.dependency.task.DependencyWPTask
+import io.github.eugene239.gradle.plugin.dependency.task.GenerateBomTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
@@ -25,6 +26,9 @@ class DependencyPlugin : Plugin<Project> {
             it.group = "dependency-ui"
         }
         project.tasks.register("dependencyConflict", DependencyConflictTask::class.java) {
+            it.group = "dependency-ui"
+        }
+        project.tasks.register("dependencyBom", GenerateBomTask::class.java) {
             it.group = "dependency-ui"
         }
     }
