@@ -10,7 +10,7 @@ import org.gradle.api.logging.Logger
 internal object CommonModule {
 
     fun register(project: Project) {
-        project.logger.warn("[DI] Register CommonModule")
+        project.logger.info("[DI] Register CommonModule")
         DI.register(Logger::class.java, project.logger)
         DI.register(Project::class.java, project)
         DI.register(IsSubmoduleProvider::class.java, DefaultIsSubmoduleProvider())

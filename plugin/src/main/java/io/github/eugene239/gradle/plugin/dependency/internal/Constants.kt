@@ -19,3 +19,9 @@ internal val PREP_RELEASE_KEYS = setOf(
 internal const val WARN = "⚠\uFE0F"
 internal const val FAIL = "❗"
 internal const val OK = "✅"
+
+internal const val ARTIFACT_ID = "artifactId"
+internal const val GROUP_ID = "groupId"
+internal const val VERSION = "version"
+internal const val VERSION_DATE_FORMAT = "YYYY-MM-dd"
+internal const val BOM_DEFAULT_ARTIFACT_ID = "bom"
