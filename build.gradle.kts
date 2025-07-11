@@ -1,17 +1,3 @@
-import java.net.URI
-
-buildscript {
-    repositories {
-        mavenCentral()
-        mavenLocal()
-    }
-}
-
-allprojects {
-    repositories {
-        mavenCentral()
-        maven {
-            url = URI("https://maven.google.com/")
-        }
-    }
+plugins {
+    alias(libs.plugins.android.library) apply false
 }

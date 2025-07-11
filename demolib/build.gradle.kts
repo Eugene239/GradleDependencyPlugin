@@ -21,13 +21,6 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 }
 
 buildscript {
-    repositories {
-        maven {
-            name = "projectLocal"
-            url = uri("${rootDir}/localMavenRepo")
-        }
-    }
-
     dependencies {
         val pluginClasspath = PluginProvider.getPluginClasspath(project)
         if (pluginClasspath != null) {
@@ -48,7 +41,8 @@ if (PluginProvider.getPluginClasspath(project) != null) {
         jar = JarConfig(
             groupId = "io.github.eugene239",
             artifactId = "demolib",
-            version = "2.0.0"
+            version = "2.0.0",
+            addSource = true
         )
     }
 

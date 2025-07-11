@@ -3,6 +3,7 @@ package io.github.eugene239.gradle.plugin.dependency
 import io.github.eugene239.gradle.plugin.dependency.internal.di.CommonModule
 import io.github.eugene239.gradle.plugin.dependency.publication.AarPublication
 import io.github.eugene239.gradle.plugin.dependency.publication.BomPublication
+import io.github.eugene239.gradle.plugin.dependency.publication.JarPublication
 import io.github.eugene239.gradle.plugin.dependency.publication.PublicationExtension
 import io.github.eugene239.gradle.plugin.dependency.task.DependencyConflictTask
 import io.github.eugene239.gradle.plugin.dependency.task.DependencyLatestVersionsTask
@@ -66,7 +67,13 @@ class DependencyPlugin : Plugin<Project> {
                     }
                 }
             }
-            publicationExtension.jar
+            publicationExtension.jar?.let { jarConfig ->
+                if (extension.publications.findByName(JarPublication.NAME) == null) {
+                    extension.publications.create(JarPublication.NAME, MavenPublication::class.java) {
+                        JarPublication.create(it, jarConfig)
+                    }
+                }
+            }
         }
     }
 }
