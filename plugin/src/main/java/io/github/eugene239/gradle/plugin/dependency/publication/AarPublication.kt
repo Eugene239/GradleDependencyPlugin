@@ -32,7 +32,9 @@ object AarPublication {
         publication.version = version
 
         if (config.addSource) {
-            addSources(project, publication, config)
+            SourceJar.addSources(project, config.srcDirs)?.let { task ->
+                publication.artifact(task)
+            }
         }
 
         if (config.artifacts.isNotEmpty()) {
@@ -66,26 +68,6 @@ object AarPublication {
             }
 
             logger.lifecycle("Created POM: $groupId:$artifactId:$version")
-        }
-    }
-
-    private fun addSources(project: Project, publication: MavenPublication, config: AarConfig) {
-        if (project.tasks.findByName(SOURCE_JAR_TASK) == null) {
-            project.tasks.register(SOURCE_JAR_TASK, Jar::class.java) {
-                it.archiveClassifier.set("source")
-                config.srcDirs.forEach { dir ->
-                    val file = project.file(dir)
-                    if (file.exists()) {
-                        it.from(file)
-                    } else {
-                        project.logger.info("Source directory not found: $dir")
-                    }
-                }
-            }
-        }
-
-        project.tasks.findByName(SOURCE_JAR_TASK)?.let {
-            publication.artifact(it)
         }
     }
 

@@ -66,6 +66,7 @@ class DependencyPlugin : Plugin<Project> {
                     }
                 }
             }
+            publicationExtension.jar
         }
     }
 }
