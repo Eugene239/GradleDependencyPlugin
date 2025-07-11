@@ -2,8 +2,6 @@ import io.github.eugene239.gradle.plugin.dependency.publication.AarConfig
 import io.github.eugene239.gradle.plugin.dependency.publication.BomConfig
 import io.github.eugene239.gradle.plugin.dependency.publication.PublicationExtension
 
-//import io.github.eugene239.gradle.plugin.dependency.publication.PublicationExtension
-
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
