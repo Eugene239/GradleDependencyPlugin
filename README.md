@@ -9,6 +9,25 @@ A Gradle plugin for analyzing project dependencies
 - visualizes dependency graphs via a local web page
 - supports BOM/JAR/AAR publication for dependency management distribution
 
+* [Gradle Dependency Plugin](#gradle-dependency-plugin)
+  * [Installation](#installation)
+  * [Tasks](#tasks)
+    * [dependencyLatestVersions](#dependencylatestversions)
+    * [dependencyConflict](#dependencyconflict)
+    * [dependencyWP](#dependencywp)
+  * [CLI parameters](#cli-parameters)
+  * [Examples](#examples)
+    * [All-in for WP](#all-in-for-wp)
+    * [Latest versions report](#latest-versions-report)
+    * [Conflicts scan](#conflicts-scan)
+  * [Publication](#publication)
+    * [BOM publication](#bom-publication)
+      * [Usage:](#usage)
+    * [JAR publication](#jar-publication)
+      * [Usage:](#usage-1)
+    * [AAR publication](#aar-publication)
+  * [License](#license-)
+
 ## Installation
 
 ```gradle
