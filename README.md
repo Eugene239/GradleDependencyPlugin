@@ -28,6 +28,7 @@ A Gradle plugin for analyzing project dependencies
       * [Usage:](#usage-1)
     * [AAR publication](#aar-publication)
   * [License](#license-)
+---
 
 ## Installation
 
