@@ -35,9 +35,6 @@ class DependencyPlugin : Plugin<Project> {
         project.tasks.register("dependencyConflict", DependencyConflictTask::class.java) {
             it.group = "dependency-ui"
         }
-//        project.tasks.register("dependencyBom", GenerateBomTask::class.java) {
-//            it.group = "dependency-ui"
-//        }
     }
 
     private fun createExtensions(project: Project) {
