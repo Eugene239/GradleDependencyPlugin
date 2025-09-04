@@ -9,6 +9,7 @@ A Gradle plugin for analyzing project dependencies
 - visualizes dependency graphs via a local web page
 - supports BOM/JAR/AAR publication for dependency management distribution
 
+---
 * [Gradle Dependency Plugin](#gradle-dependency-plugin)
   * [Installation](#installation)
   * [Tasks](#tasks)
