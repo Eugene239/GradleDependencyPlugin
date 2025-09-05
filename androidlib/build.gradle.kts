@@ -1,7 +1,3 @@
-import io.github.eugene239.gradle.plugin.dependency.publication.AarConfig
-import io.github.eugene239.gradle.plugin.dependency.publication.BomConfig
-import io.github.eugene239.gradle.plugin.dependency.publication.PublicationExtension
-
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
@@ -46,14 +42,14 @@ buildscript {
 if (PluginProvider.getPluginClasspath(project) != null) {
     apply(plugin = "io.github.eugene239.gradle.plugin.dependency")
 
-    extensions.configure(PublicationExtension::class) {
-        aar = AarConfig(
+    extensions.configure(io.github.eugene239.gradle.plugin.dependency.publication.PublicationExtension::class) {
+        aar = io.github.eugene239.gradle.plugin.dependency.publication.AarConfig(
             groupId = "io.github.eugene239",
             artifactId = "androidlib",
             version = "1.3.0",
             addSource = true
         )
-        bom = BomConfig(
+        bom = io.github.eugene239.gradle.plugin.dependency.publication.BomConfig(
             groupId = "io.github.eugene239",
             artifactId = "androidlib-bom",
         )

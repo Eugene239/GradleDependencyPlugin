@@ -1,7 +1,3 @@
-import io.github.eugene239.gradle.plugin.dependency.publication.BomConfig
-import io.github.eugene239.gradle.plugin.dependency.publication.JarConfig
-import io.github.eugene239.gradle.plugin.dependency.publication.PublicationExtension
-
 plugins {
     id("java-library")
     alias(libs.plugins.kotlin.jvm)
@@ -32,13 +28,13 @@ buildscript {
 if (PluginProvider.getPluginClasspath(project) != null) {
     apply(plugin = "io.github.eugene239.gradle.plugin.dependency")
 
-    extensions.configure(PublicationExtension::class) {
-        bom = BomConfig(
+    extensions.configure(io.github.eugene239.gradle.plugin.dependency.publication.PublicationExtension::class) {
+        bom = io.github.eugene239.gradle.plugin.dependency.publication.BomConfig(
             groupId = "io.github.eugene239",
             artifactId = "demolib-bom",
             version = "1.0.0"
         )
-        jar = JarConfig(
+        jar = io.github.eugene239.gradle.plugin.dependency.publication.JarConfig(
             groupId = "io.github.eugene239",
             artifactId = "demolib",
             version = "2.0.0",
