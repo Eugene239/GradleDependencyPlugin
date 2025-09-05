@@ -25,32 +25,32 @@ buildscript {
     }
 }
 
-if (PluginProvider.getPluginClasspath(project) != null) {
-    apply(plugin = "io.github.eugene239.gradle.plugin.dependency")
-
-    extensions.configure(io.github.eugene239.gradle.plugin.dependency.publication.PublicationExtension::class) {
-        bom = io.github.eugene239.gradle.plugin.dependency.publication.BomConfig(
-            groupId = "io.github.eugene239",
-            artifactId = "demolib-bom",
-            version = "1.0.0"
-        )
-        jar = io.github.eugene239.gradle.plugin.dependency.publication.JarConfig(
-            groupId = "io.github.eugene239",
-            artifactId = "demolib",
-            version = "2.0.0",
-            addSource = true
-        )
-    }
-
-    publishing {
-        repositories {
-            maven {
-                name = "projectLocal"
-                url = uri("${rootDir}/localMavenRepo")
-            }
-        }
-    }
-}
+//if (PluginProvider.getPluginClasspath(project) != null) {
+//    apply(plugin = "io.github.eugene239.gradle.plugin.dependency")
+//
+//    extensions.configure(io.github.eugene239.gradle.plugin.dependency.publication.PublicationExtension::class) {
+//        bom = io.github.eugene239.gradle.plugin.dependency.publication.BomConfig(
+//            groupId = "io.github.eugene239",
+//            artifactId = "demolib-bom",
+//            version = "1.0.0"
+//        )
+//        jar = io.github.eugene239.gradle.plugin.dependency.publication.JarConfig(
+//            groupId = "io.github.eugene239",
+//            artifactId = "demolib",
+//            version = "2.0.0",
+//            addSource = true
+//        )
+//    }
+//
+//    publishing {
+//        repositories {
+//            maven {
+//                name = "projectLocal"
+//                url = uri("${rootDir}/localMavenRepo")
+//            }
+//        }
+//    }
+//}
 
 
 dependencies {
